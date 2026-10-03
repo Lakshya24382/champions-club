@@ -1,15 +1,21 @@
 import { Routes, Route, Navigate } from 'react-router';
 import { useAuth } from './auth.jsx';
 import Layout from './components/Layout.jsx';
+import PublicLayout from './components/PublicLayout.jsx';
 import Login from './pages/Login.jsx';
+import Home from './pages/Home.jsx';
+import Book from './pages/Book.jsx';
+import QuotePage from './pages/QuotePage.jsx';
+import Storefront from './pages/Storefront.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Members from './pages/Members.jsx';
 import MemberDetail from './pages/MemberDetail.jsx';
 import Bookings from './pages/Bookings.jsx';
+import Leads from './pages/Leads.jsx';
+import LeadDetail from './pages/LeadDetail.jsx';
 import Inventory from './pages/Inventory.jsx';
 import Pos from './pages/Pos.jsx';
 import Orders from './pages/Orders.jsx';
-import Storefront from './pages/Storefront.jsx';
 import Bar from './pages/Bar.jsx';
 import Kitchen from './pages/Kitchen.jsx';
 import BarReports from './pages/BarReports.jsx';
@@ -23,16 +29,23 @@ function Protected() {
 export default function App() {
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/login" element={<Login />} />
+      {/* Public website */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/book" element={<Book />} />
+        <Route path="/quote/:token" element={<QuotePage />} />
+      </Route>
       <Route path="/shop" element={<Storefront />} />
+      <Route path="/login" element={<Login />} />
 
       {/* Staff only */}
       <Route element={<Protected />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/members" element={<Members />} />
         <Route path="/members/:id" element={<MemberDetail />} />
         <Route path="/bookings" element={<Bookings />} />
+        <Route path="/leads" element={<Leads />} />
+        <Route path="/leads/:id" element={<LeadDetail />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/pos" element={<Pos />} />
         <Route path="/orders" element={<Orders />} />

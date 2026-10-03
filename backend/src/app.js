@@ -16,6 +16,8 @@ import catalogRoutes from './routes/catalog.routes.js';
 import productsRoutes from './routes/products.routes.js';
 import ordersRoutes from './routes/orders.routes.js';
 import barRoutes from './routes/bar.routes.js';
+import publicRoutes from './routes/public.routes.js';
+import leadsRoutes from './routes/leads.routes.js';
 
 const app = express();
 
@@ -33,6 +35,7 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/plans', plansRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/catalog', catalogRoutes);
+app.use('/api/public', publicRoutes);          // website: overview, availability, enquiries, trials, quotes
 
 // Staff only (JWT required)
 app.use('/api/members', requireAuth, membersRoutes);
@@ -42,6 +45,7 @@ app.use('/api/dashboard', requireAuth, dashboardRoutes);
 app.use('/api/products', requireAuth, productsRoutes);
 app.use('/api/orders', requireAuth, ordersRoutes);
 app.use('/api/bar', requireAuth, barRoutes);
+app.use('/api/leads', requireAuth, leadsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

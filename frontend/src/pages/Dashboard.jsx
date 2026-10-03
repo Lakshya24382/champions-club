@@ -15,16 +15,32 @@ function Card({ label, value, to, tone = '' }) {
 
 export default function Dashboard() {
   const { data: s, isLoading } = useQuery({ queryKey: ['dashboard'], queryFn: () => api('/dashboard/summary') });
+  const { data: ls } = useQuery({ queryKey: ['leads-summary'], queryFn: () => api('/leads/summary') });
   if (isLoading) return <p>Loading…</p>;
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Today at the club</h1>
 
+      {ls?.attention_count > 0 && (
+        <Link to="/leads" className="block rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          📨 {ls.new_count} new enquir{ls.new_count === 1 ? 'y' : 'ies'} and {ls.due_count} follow-up{ls.due_count === 1 ? '' : 's'} due. Click to open the inbox.
+        </Link>
+      )}
       {s.low_stock_items > 0 && (
         <Link to="/inventory" className="block rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">
           ⚠️ {s.low_stock_items} product{s.low_stock_items > 1 ? 's are' : ' is'} running low on stock. Click to review.
         </Link>
       )}
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold uppercase text-slate-500">Enquiries & growth</h2>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Card label="New enquiries" value={ls?.new_count ?? 0} to="/leads" tone={ls?.new_count ? 'border-amber-300' : ''} />
+          <Card label="Follow-ups due" value={ls?.due_count ?? 0} to="/leads" tone={ls?.due_count ? 'border-amber-300' : ''} />
+          <Card label="Open enquiries" value={ls?.open_count ?? 0} to="/leads" />
+          <Card label="Converted this month" value={ls?.converted_month ?? 0} />
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase text-slate-500">Courts</h2>
