@@ -1,0 +1,30 @@
+import { NavLink, Outlet } from 'react-router';
+import { useAuth } from '../auth.jsx';
+
+const link = ({ isActive }) =>
+  `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-emerald-600 text-white' : 'text-slate-700 hover:bg-slate-200'}`;
+
+export default function Layout() {
+  const { user, logout } = useAuth();
+  return (
+    <div className="min-h-screen">
+      <header className="border-b bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-6">
+            <span className="text-lg font-bold text-emerald-700">🏆 Champions Club</span>
+            <nav className="flex gap-1">
+              <NavLink to="/" end className={link}>Dashboard</NavLink>
+              <NavLink to="/members" className={link}>Members</NavLink>
+              <NavLink to="/bookings" className={link}>Bookings</NavLink>
+            </nav>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-slate-600">{user.name} · {user.role}</span>
+            <button onClick={logout} className="text-slate-500 hover:text-slate-900">Log out</button>
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl p-4"><Outlet /></main>
+    </div>
+  );
+}
