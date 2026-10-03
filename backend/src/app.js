@@ -27,39 +27,60 @@ import sharedReportRoutes from './routes/sharedReport.routes.js';
 const app = express();
 const managers = requireRole('owner', 'admin');
 
+// Security & parsing
 app.use(helmet());
-app.use(cors({ origin: config.corsOrigin }));
-app.use(express.json());
-app.use(morgan('dev'));
+app.use(
+  cors({
+    origin: config.corsOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
+app.use(express.json({ limit: '1mb' }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-app.get('/api/health', async (_req, res) => {
-  await query('SELECT 1');
-  res.json({ status: 'ok', time: new Date().toISOString() });
+// Request timeout — prevents slow queries from blocking indefinitely
+app.use((_req, res, next) => {
+  res.setTimeout(30_000, () => {
+    res.status(503).json({ error: 'Request timed out' });
+  });
+  next();
 });
 
-// Public
+// Health check (no auth, minimal work)
+app.get('/api/health', async (_req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({ status: 'ok', time: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: 'degraded', time: new Date().toISOString() });
+  }
+});
+
+// ── Public routes ──────────────────────────────────────────────────────────────
 app.use('/api/plans', plansRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/catalog', catalogRoutes);
-app.use('/api/public/report', sharedReportRoutes);   // frozen, shared owner reports
+app.use('/api/public/report', sharedReportRoutes); // frozen, shared owner reports
 app.use('/api/public', publicRoutes);
 
-// Staff (JWT required)
-app.use('/api/members', requireAuth, membersRoutes);
-app.use('/api/courts', requireAuth, courtsRoutes);
+// ── Staff routes (JWT required) ────────────────────────────────────────────────
+app.use('/api/members',  requireAuth, membersRoutes);
+app.use('/api/courts',   requireAuth, courtsRoutes);
 app.use('/api/bookings', requireAuth, bookingsRoutes);
-app.use('/api/dashboard', requireAuth, dashboardRoutes);
+app.use('/api/dashboard',requireAuth, dashboardRoutes);
 app.use('/api/products', requireAuth, productsRoutes);
-app.use('/api/orders', requireAuth, ordersRoutes);
-app.use('/api/bar', requireAuth, barRoutes);
-app.use('/api/leads', requireAuth, leadsRoutes);
-app.use('/api/hr', requireAuth, hrRoutes);           // leave is open to all staff; the rest checks roles inside
+app.use('/api/orders',   requireAuth, ordersRoutes);
+app.use('/api/bar',      requireAuth, barRoutes);
+app.use('/api/leads',    requireAuth, leadsRoutes);
+app.use('/api/hr',       requireAuth, hrRoutes);
 
-// Owner / admin only
-app.use('/api/finance', requireAuth, managers, financeRoutes);
+// ── Owner / admin only ─────────────────────────────────────────────────────────
+app.use('/api/finance',  requireAuth, managers, financeRoutes);
 app.use('/api/invoices', requireAuth, managers, invoicesRoutes);
 app.use('/api/expenses', requireAuth, managers, expensesRoutes);
 
+// ── Error handling (must be last) ──────────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 

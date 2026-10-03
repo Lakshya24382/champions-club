@@ -8,7 +8,22 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import './index.css';
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 10_000, retry: false } },
+  defaultOptions: {
+    queries: {
+      staleTime: 15_000,       // 15s before background refetch
+      gcTime: 5 * 60_000,      // 5min cache retention
+      retry: (failureCount, error) => {
+        // Don't retry auth/permission errors
+        if (error?.message?.includes('401') || error?.message?.includes('403')) return false;
+        return failureCount < 2;
+      },
+      refetchOnWindowFocus: true,
+    },
+    mutations: {
+      // Mutations don't retry by default (avoids duplicate side-effects)
+      retry: false,
+    },
+  },
 });
 
 createRoot(document.getElementById('root')).render(

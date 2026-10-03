@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+:root {
+  --brand: #059669;
+  --brand-dark: #047857;
+  --brand-light: #d1fae5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth scroll for anchor links */
+html {
+  scroll-behavior: smooth;
+}
