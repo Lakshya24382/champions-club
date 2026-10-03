@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
 import { useAuth } from '../auth.jsx';
-import { Field, inputCls, btnCls } from '../components/ui.jsx';
 
 export default function Login() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('owner@champions.club');
+  const [email, setEmail]       = useState('owner@champions.club');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
   if (user) return <Navigate to="/dashboard" replace />;
 
@@ -28,61 +27,98 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="mb-8 text-center">
-          <span className="text-4xl">🏆</span>
-          <h1 className="mt-3 text-2xl font-bold text-slate-900">Champions Club</h1>
-          <p className="mt-1 text-sm text-slate-500">Staff portal</p>
+    <div className="login-shell">
+      {/* Left — visual panel */}
+      <div className="login-visual">
+        <div className="login-brand">
+          <div className="brand-mark">CC</div>
+          <div className="login-brand-text">
+            <b>CHAMPIONS</b>
+            <small>CLUB MANAGEMENT</small>
+          </div>
         </div>
 
-        <form
-          onSubmit={submit}
-          className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <Field label="Email address">
+        <div className="login-hero">
+          <div className="eyebrow">STAFF PORTAL</div>
+          <h1>Manage your<br /><em>club</em> smarter.</h1>
+          <p>
+            Courts, members, bar, shop, finance — everything you need to run
+            Champions Club, in one place.
+          </p>
+        </div>
+
+        <div className="visual-grid">
+          <div className="visual-card">
+            <div className="court-art"><span /></div>
+            <b>COURTS</b>
+            <small>LIVE SCHEDULE</small>
+          </div>
+          <div className="visual-card">
+            <div className="ball-art"><span /></div>
+            <b>MEMBERS</b>
+            <small>CRM &amp; PLANS</small>
+          </div>
+          <div className="visual-card">
+            <div className="club-art"><span>CC</span></div>
+            <b>FINANCE</b>
+            <small>REPORTS &amp; P&amp;L</small>
+          </div>
+        </div>
+
+        <div className="login-stat-strip">
+          <div className="login-stat"><b>4</b><small>SPORTS</small></div>
+          <div className="login-stat"><b>∞</b><small>BOOKINGS</small></div>
+          <div className="login-stat"><b>24/7</b><small>AVAILABLE</small></div>
+        </div>
+      </div>
+
+      {/* Right — login form */}
+      <div className="login-panel">
+        <div className="login-card">
+          <div className="login-card-head">
+            <div className="brand-mark" style={{ width: 36, height: 36, borderRadius: 9, fontSize: 11 }}>CC</div>
+            <span className="secure-pill">🔒 SECURE LOGIN</span>
+          </div>
+
+          <h2>Welcome back</h2>
+          <p className="login-subtitle">Sign in to access Club Management</p>
+
+          <form onSubmit={submit}>
+            <label className="login-field-label">Email address</label>
             <input
               type="email"
-              className={inputCls}
+              className="login-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
               required
             />
-          </Field>
 
-          <Field label="Password">
+            <label className="login-field-label">Password</label>
             <input
               type="password"
-              className={inputCls}
+              className="login-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
             />
-          </Field>
 
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+            {error && <div className="login-error">{error}</div>}
 
-          <button
-            type="submit"
-            className={`${btnCls} w-full justify-center py-2.5`}
-            disabled={loading}
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
+            <button type="submit" className="login-submit" disabled={loading}>
+              {loading ? 'Signing in…' : 'Sign in to Club Management'}
+              <span className="login-submit-arrow">→</span>
+            </button>
+          </form>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          <Link to="/" className="text-emerald-700 hover:underline">
-            ← Back to the website
-          </Link>
-        </p>
+          <div className="login-footer">
+            <span>v2.0 · Champions Club</span>
+            <b>Staff only</b>
+          </div>
+
+          <a href="/" className="back-to-site">← Back to public website</a>
+        </div>
       </div>
     </div>
   );

@@ -1,35 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { api } from '../api';
-import { money, PageLoader, Alert } from '../components/ui.jsx';
+import { money, PageLoader } from '../components/ui.jsx';
 
-function StatCard({ label, value, sub, to, tone = '' }) {
-  const body = (
-    <div
-      className={`group rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md ${tone}`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
-    </div>
-  );
-  return to ? (
-    <Link to={to} className="block">
-      {body}
-    </Link>
-  ) : (
-    body
-  );
-}
-
-function Section({ title, children }) {
-  return (
-    <section>
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{children}</div>
-    </section>
-  );
-}
+const BAR_HEIGHTS = [32, 46, 39, 58, 51, 67, 61, 74, 68, 86, 72, 80];
 
 export default function Dashboard() {
   const { data: s, isLoading } = useQuery({
@@ -43,111 +17,295 @@ export default function Dashboard() {
 
   if (isLoading) return <PageLoader />;
 
+  const today = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  const attention = ls?.attention_count ?? 0;
+
   return (
-    <div className="space-y-8">
-      {/* Page title */}
-      <div className="flex items-center justify-between">
+    <>
+      {/* Page intro */}
+      <div className="page-intro">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Today at the club</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+          <div className="eyebrow dark">COURT OPERATIONS</div>
+          <h2>Club Overview</h2>
+          <p>Monitor today's activity — members, bookings, bar, and shop at a glance.</p>
+        </div>
+        <div className="date-card">
+          <span>TODAY</span>
+          <b>{today}</b>
         </div>
       </div>
 
       {/* Attention banners */}
-      {(ls?.attention_count > 0 || s.low_stock_items > 0) && (
-        <div className="space-y-2">
-          {ls?.attention_count > 0 && (
+      {(attention > 0 || s.low_stock_items > 0) && (
+        <div style={{ marginBottom: 18, display: 'grid', gap: 8 }}>
+          {attention > 0 && (
             <Link to="/leads">
-              <Alert type="warning">
-                <span className="font-semibold">Enquiries need attention:</span>{' '}
-                {ls.new_count} new {ls.new_count === 1 ? 'enquiry' : 'enquiries'} and{' '}
-                {ls.due_count} follow-up{ls.due_count === 1 ? '' : 's'} due today.
-              </Alert>
+              <div className="cc-alert warning">
+                <b>Enquiries need attention —</b> {ls.new_count} new{' '}
+                {ls.new_count === 1 ? 'enquiry' : 'enquiries'} and {ls.due_count} follow-up
+                {ls.due_count === 1 ? '' : 's'} due today.
+              </div>
             </Link>
           )}
           {s.low_stock_items > 0 && (
             <Link to="/inventory">
-              <Alert type="error">
-                <span className="font-semibold">Low stock:</span>{' '}
-                {s.low_stock_items} product{s.low_stock_items > 1 ? 's are' : ' is'} running low.
-                Review inventory.
-              </Alert>
+              <div className="cc-alert error">
+                <b>Low stock:</b> {s.low_stock_items} product
+                {s.low_stock_items > 1 ? 's are' : ' is'} running low. Review inventory.
+              </div>
             </Link>
           )}
         </div>
       )}
 
-      {/* Stats sections */}
-      <Section title="Enquiries & growth">
-        <StatCard
-          label="New enquiries"
-          value={ls?.new_count ?? 0}
-          to="/leads"
-          tone={ls?.new_count ? 'border-amber-300 hover:border-amber-400' : ''}
-        />
-        <StatCard
-          label="Follow-ups due"
-          value={ls?.due_count ?? 0}
-          to="/leads"
-          tone={ls?.due_count ? 'border-amber-300 hover:border-amber-400' : ''}
-        />
-        <StatCard label="Open enquiries" value={ls?.open_count ?? 0} to="/leads" />
-        <StatCard label="Converted this month" value={ls?.converted_month ?? 0} />
-      </Section>
+      {/* KPI cards */}
+      <div className="kpi-grid">
+        <Link to="/bookings" style={{ textDecoration: 'none' }}>
+          <div className="kpi">
+            <span className="kpi-icon green">▦</span>
+            <small>BOOKINGS TODAY</small>
+            <strong>{s.bookings_today}</strong>
+            <em>Live court schedule</em>
+          </div>
+        </Link>
+        <Link to="/members" style={{ textDecoration: 'none' }}>
+          <div className="kpi">
+            <span className="kpi-icon blue">♙</span>
+            <small>ACTIVE MEMBERS</small>
+            <strong>{s.active_members}</strong>
+            <em>Current membership base</em>
+          </div>
+        </Link>
+        <div className="kpi">
+          <span className="kpi-icon purple">₹</span>
+          <small>REVENUE TODAY</small>
+          <strong>{money(s.court_revenue_today + s.shop_revenue_today + s.bar_revenue_today)}</strong>
+          <em>All areas combined</em>
+        </div>
+        <Link to="/inventory" style={{ textDecoration: 'none' }}>
+          <div className="kpi">
+            <span className="kpi-icon amber">!</span>
+            <small>LOW STOCK</small>
+            <strong>{s.low_stock_items}</strong>
+            <em>Items need attention</em>
+          </div>
+        </Link>
+      </div>
 
-      <Section title="Courts">
-        <StatCard label="Bookings today" value={s.bookings_today} to="/bookings" />
-        <StatCard label="Court revenue today" value={money(s.court_revenue_today)} />
-        <StatCard label="Court revenue (month)" value={money(s.court_revenue_month)} />
-      </Section>
+      {/* Main grid */}
+      <div className="dashboard-layout">
+        {/* Left column */}
+        <div style={{ display: 'grid', gap: 18 }}>
 
-      <Section title="Shop">
-        <StatCard label="Shop revenue today" value={money(s.shop_revenue_today)} />
-        <StatCard label="Shop revenue (month)" value={money(s.shop_revenue_month)} />
-        <StatCard
-          label="Open online orders"
-          value={s.open_online_orders}
-          to="/orders"
-          tone={s.open_online_orders ? 'border-amber-300 hover:border-amber-400' : ''}
-        />
-        <StatCard
-          label="Low-stock items"
-          value={s.low_stock_items}
-          to="/inventory"
-          tone={s.low_stock_items ? 'border-red-300 hover:border-red-400' : ''}
-        />
-      </Section>
+          {/* Revenue overview */}
+          <section className="panel revenue-panel">
+            <div className="panel-title">
+              <div>
+                <div className="section-kicker">FINANCIAL SNAPSHOT</div>
+                <h3>Revenue overview</h3>
+                <p>Current recorded sales by business area.</p>
+              </div>
+              <Link to="/finance" className="link-btn">View reports →</Link>
+            </div>
+            <div className="revenue-chart">
+              <div className="revenue-number">
+                <strong>{money(s.court_revenue_today + s.shop_revenue_today + s.bar_revenue_today)}</strong>
+                <span>Today's recorded revenue</span>
+              </div>
+              <div className="bars">
+                {BAR_HEIGHTS.map((h, i) => (
+                  <div key={i} className="bar-item">
+                    <div className="bar" style={{ height: `${h}%` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
 
-      <Section title="Bar & cafeteria">
-        <StatCard label="Bar revenue today" value={money(s.bar_revenue_today)} to="/bar" />
-        <StatCard label="Bar revenue (month)" value={money(s.bar_revenue_month)} />
-        <StatCard
-          label="Open tabs"
-          value={s.open_tabs}
-          to="/bar"
-          tone={s.open_tabs ? 'border-amber-300 hover:border-amber-400' : ''}
-          sub={s.open_tabs ? 'Unpaid' : undefined}
-        />
-      </Section>
+          {/* Area breakdown */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            {[
+              { label: 'Courts', icon: '▦', color: 'green', today: s.court_revenue_today, month: s.court_revenue_month, link: '/bookings' },
+              { label: 'Shop',   icon: '□', color: 'blue',  today: s.shop_revenue_today,  month: s.shop_revenue_month,  link: '/pos' },
+              { label: 'Bar',    icon: '◈', color: 'amber', today: s.bar_revenue_today,   month: s.bar_revenue_month,   link: '/bar' },
+            ].map(({ label, icon, color, today: t, month: m, link }) => (
+              <Link key={label} to={link} style={{ textDecoration: 'none' }}>
+                <div className="panel" style={{ padding: '15px' }}>
+                  <div className="panel-title" style={{ marginBottom: 10 }}>
+                    <div className="section-kicker">{label.toUpperCase()}</div>
+                    <span className={`action-icon ${color}`} style={{ width: 26, height: 26, borderRadius: 7, fontSize: 11 }}>{icon}</span>
+                  </div>
+                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 22, fontWeight: 800 }}>{money(t)}</div>
+                  <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>Today · {money(m)} this month</div>
+                </div>
+              </Link>
+            ))}
+          </div>
 
-      <Section title="Members">
-        <StatCard label="Active members" value={s.active_members} to="/members" />
-        <StatCard
-          label="Expiring in 30 days"
-          value={s.expiring_soon}
-          to="/members"
-          tone="border-amber-300 hover:border-amber-400"
-        />
-        <StatCard
-          label="Expired"
-          value={s.expired_members}
-          to="/members"
-          tone="border-red-300 hover:border-red-400"
-        />
-        <StatCard label="Total members" value={s.total_members} />
-      </Section>
-    </div>
+          {/* Enquiries */}
+          <section className="panel">
+            <div className="panel-title">
+              <div>
+                <div className="section-kicker">CRM</div>
+                <h3>Enquiries & Growth</h3>
+              </div>
+              <Link to="/leads" className="link-btn">Manage enquiries →</Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {[
+                { label: 'NEW', value: ls?.new_count ?? 0, sub: 'Enquiries' },
+                { label: 'DUE', value: ls?.due_count ?? 0, sub: 'Follow-ups today' },
+                { label: 'OPEN', value: ls?.open_count ?? 0, sub: 'In pipeline' },
+                { label: 'CONVERTED', value: ls?.converted_month ?? 0, sub: 'This month' },
+              ].map(({ label, value, sub }) => (
+                <div key={label} style={{ textAlign: 'center', padding: '12px 8px', background: '#f7f9f7', borderRadius: 9 }}>
+                  <div style={{ fontSize: 8, letterSpacing: '1px', fontWeight: 800, color: '#7a8b84' }}>{label}</div>
+                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>{value}</div>
+                  <div style={{ fontSize: 9, color: 'var(--muted)' }}>{sub}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Members */}
+          <section className="panel">
+            <div className="panel-title">
+              <div>
+                <div className="section-kicker">MEMBERSHIP</div>
+                <h3>Member status</h3>
+              </div>
+              <Link to="/members" className="link-btn">All members →</Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {[
+                { label: 'ACTIVE',   value: s.active_members,   color: 'success' },
+                { label: 'EXPIRING', value: s.expiring_soon,    color: 'amber' },
+                { label: 'EXPIRED',  value: s.expired_members,  color: 'danger' },
+                { label: 'TOTAL',    value: s.total_members,    color: 'info' },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ textAlign: 'center', padding: '12px 8px', background: '#f7f9f7', borderRadius: 9 }}>
+                  <div style={{ fontSize: 8, letterSpacing: '1px', fontWeight: 800, color: '#7a8b84' }}>{label}</div>
+                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>{value}</div>
+                  <span className={`pill ${color}`}>{label.toLowerCase()}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* Right sidebar */}
+        <aside className="dashboard-side">
+          {/* Quick actions */}
+          <section className="panel">
+            <div className="panel-title">
+              <div>
+                <div className="section-kicker">SHORTCUTS</div>
+                <h3>Quick actions</h3>
+              </div>
+            </div>
+            <div className="action-grid">
+              <Link to="/bookings" className="action-item">
+                <span className="action-icon green">＋</span>
+                <b>New booking</b>
+                <small>Court reservation</small>
+              </Link>
+              <Link to="/members" className="action-item">
+                <span className="action-icon blue">♙</span>
+                <b>Add member</b>
+                <small>Membership CRM</small>
+              </Link>
+              <Link to="/pos" className="action-item">
+                <span className="action-icon purple">□</span>
+                <b>Shop sale</b>
+                <small>Inventory &amp; POS</small>
+              </Link>
+              <Link to="/bar" className="action-item">
+                <span className="action-icon amber">◈</span>
+                <b>Bar order</b>
+                <small>Cafeteria POS</small>
+              </Link>
+            </div>
+          </section>
+
+          {/* Club watch */}
+          <section className="panel">
+            <div className="panel-title">
+              <div>
+                <div className="section-kicker">ATTENTION</div>
+                <h3>Club watch</h3>
+              </div>
+            </div>
+            <div className="watch-list">
+              <div className="watch-row">
+                <span className="watch-mark amber">!</span>
+                <div>
+                  <b>{s.low_stock_items} low-stock item{s.low_stock_items !== 1 ? 's' : ''}</b>
+                  <small>Review inventory</small>
+                </div>
+                <Link to="/inventory">→</Link>
+              </div>
+              <div className="watch-row">
+                <span className="watch-mark blue">✉</span>
+                <div>
+                  <b>{attention} enquir{attention !== 1 ? 'ies' : 'y'} pending</b>
+                  <small>Leads &amp; CRM</small>
+                </div>
+                <Link to="/leads">→</Link>
+              </div>
+              <div className="watch-row">
+                <span className="watch-mark amber">⏳</span>
+                <div>
+                  <b>{s.expiring_soon} membership{s.expiring_soon !== 1 ? 's' : ''} expiring</b>
+                  <small>Within 30 days</small>
+                </div>
+                <Link to="/members">→</Link>
+              </div>
+              {s.open_tabs > 0 && (
+                <div className="watch-row">
+                  <span className="watch-mark amber">◈</span>
+                  <div>
+                    <b>{s.open_tabs} open bar tab{s.open_tabs !== 1 ? 's' : ''}</b>
+                    <small>Unpaid</small>
+                  </div>
+                  <Link to="/bar">→</Link>
+                </div>
+              )}
+              <div className="watch-row">
+                <span className="watch-mark green">✓</span>
+                <div>
+                  <b>System online</b>
+                  <small>All services responding</small>
+                </div>
+                <span className="ok-pill">OK</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Online orders */}
+          {s.open_online_orders > 0 && (
+            <section className="panel">
+              <div className="panel-title">
+                <div>
+                  <div className="section-kicker">SHOP</div>
+                  <h3>Online orders</h3>
+                </div>
+                <Link to="/orders" className="link-btn">View all →</Link>
+              </div>
+              <div className="watch-row" style={{ borderTop: 0 }}>
+                <span className="watch-mark amber">◫</span>
+                <div>
+                  <b>{s.open_online_orders} open order{s.open_online_orders !== 1 ? 's' : ''}</b>
+                  <small>Awaiting fulfilment</small>
+                </div>
+                <Link to="/orders">→</Link>
+              </div>
+            </section>
+          )}
+        </aside>
+      </div>
+    </>
   );
 }

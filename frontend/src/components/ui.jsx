@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// ── Tailwind class strings ────────────────────────────────────────────────────
-export const inputCls =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-400';
-
-export const btnCls =
-  'inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50';
-
-export const btnGhostCls =
-  'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[.98] disabled:opacity-50';
-
-export const btnDangerCls =
-  'inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-red-700 active:scale-[.98] disabled:opacity-50';
+// ── Class strings (mapped to v1.8 CSS variables) ─────────────────────────────
+export const inputCls = 'cc-input';
+export const btnCls = 'cc-btn primary';
+export const btnGhostCls = 'cc-btn secondary';
+export const btnDangerCls = 'cc-btn danger';
 
 // ── Formatter ─────────────────────────────────────────────────────────────────
 export const money = (n) =>
@@ -24,10 +17,10 @@ export const money = (n) =>
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 export function Field({ label, hint, children }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-slate-600">{label}</span>
+    <label style={{ display: 'block' }}>
+      <span className="cc-label">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
+      {hint && <span style={{ display: 'block', marginTop: 4, fontSize: 10, color: 'var(--muted)' }}>{hint}</span>}
     </label>
   );
 }
@@ -49,14 +42,14 @@ export function Modal({ title, onClose, size = 'md', children }) {
       onClick={onClose}
     >
       <div
-        className={`max-h-[90vh] w-full ${widths[size]} overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5`}
+        className={`max-h-[90vh] w-full ${widths[size]} overflow-y-auto panel`} style={{ borderRadius: 16, padding: 24 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-start justify-between gap-4">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          <h2 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 18, margin: 0 }}>{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            style={{ background: 'none', border: 0, color: 'var(--muted)', cursor: 'pointer', padding: 4, borderRadius: 6 }}
             aria-label="Close"
           >
             <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
@@ -71,42 +64,34 @@ export function Modal({ title, onClose, size = 'md', children }) {
 }
 
 // ── Status badges ─────────────────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  active:   { cls: 'bg-emerald-100 text-emerald-800 ring-emerald-200', dot: 'bg-emerald-500' },
-  expiring: { cls: 'bg-amber-100 text-amber-800 ring-amber-200',      dot: 'bg-amber-500'   },
-  expired:  { cls: 'bg-red-100 text-red-700 ring-red-200',            dot: 'bg-red-500'     },
-  inactive: { cls: 'bg-slate-100 text-slate-600 ring-slate-200',      dot: 'bg-slate-400'   },
+const STATUS_MAP = {
+  active:   'success',
+  expiring: 'amber',
+  expired:  'danger',
+  inactive: 'muted',
 };
 
 export function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.inactive;
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${cfg.cls}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-      {status}
-    </span>
-  );
+  const tone = STATUS_MAP[status] ?? 'muted';
+  return <span className={`pill ${tone}`}>{status}</span>;
 }
 
-const PLAN_COLORS = {
-  GOLD:   'bg-amber-100 text-amber-800 ring-amber-200',
-  SILVER: 'bg-slate-100 text-slate-700 ring-slate-200',
-  JUNIOR: 'bg-sky-100 text-sky-800 ring-sky-200',
+const PLAN_MAP = {
+  GOLD:   'amber',
+  SILVER: 'muted',
+  JUNIOR: 'info',
 };
 
 export function PlanBadge({ code, name }) {
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${PLAN_COLORS[code] ?? 'bg-slate-100 text-slate-600 ring-slate-200'}`}>
-      {name}
-    </span>
-  );
+  const tone = PLAN_MAP[code] ?? 'muted';
+  return <span className={`pill ${tone}`}>{name}</span>;
 }
 
 // ── Loading states ────────────────────────────────────────────────────────────
 export function Spinner({ size = 'md' }) {
   const sizes = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-8 w-8' };
   return (
-    <svg className={`animate-spin text-emerald-600 ${sizes[size]}`} viewBox="0 0 24 24" fill="none">
+    <svg className={`animate-spin ${sizes[size]}`} style={{ color: 'var(--green2)' }} viewBox="0 0 24 24" fill="none">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
@@ -134,18 +119,12 @@ export function EmptyState({ icon = '📭', title, description, action }) {
 }
 
 // ── Alert / banner ────────────────────────────────────────────────────────────
-const ALERT_CONFIG = {
-  warning: { cls: 'border-amber-200 bg-amber-50 text-amber-900', icon: '⚠️' },
-  error:   { cls: 'border-red-200 bg-red-50 text-red-900',       icon: '🚫' },
-  info:    { cls: 'border-blue-200 bg-blue-50 text-blue-900',     icon: 'ℹ️' },
-  success: { cls: 'border-emerald-200 bg-emerald-50 text-emerald-900', icon: '✅' },
-};
+const ALERT_ICONS = { warning: '⚠', error: '✕', info: 'ℹ', success: '✓' };
 
 export function Alert({ type = 'info', children }) {
-  const cfg = ALERT_CONFIG[type];
   return (
-    <div className={`flex items-start gap-2.5 rounded-xl border p-3 text-sm ${cfg.cls}`}>
-      <span className="mt-0.5 shrink-0">{cfg.icon}</span>
+    <div className={`cc-alert ${type}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+      <span style={{ flexShrink: 0 }}>{ALERT_ICONS[type]}</span>
       <div>{children}</div>
     </div>
   );
@@ -177,24 +156,13 @@ export function ToastContainer() {
     return () => toastListeners.delete(fn);
   }, [remove]);
 
-  const icons = { success: '✅', error: '🚫', warning: '⚠️', info: 'ℹ️' };
-  const colors = {
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-    error:   'border-red-200 bg-red-50 text-red-900',
-    warning: 'border-amber-200 bg-amber-50 text-amber-900',
-    info:    'border-blue-200 bg-blue-50 text-blue-900',
-  };
-
   return (
-    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg ${colors[t.type]}`}
-        >
-          <span>{icons[t.type]}</span>
-          <span>{t.message}</span>
-          <button onClick={() => remove(t.id)} className="ml-2 opacity-60 hover:opacity-100">✕</button>
+        <div key={t.id} className={`cc-alert ${t.type}`}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, boxShadow: 'var(--shadow)', minWidth: 240 }}>
+          <span style={{ flex: 1 }}>{t.message}</span>
+          <button onClick={() => remove(t.id)} style={{ background: 'none', border: 0, opacity: .6, cursor: 'pointer', fontSize: 14 }}>✕</button>
         </div>
       ))}
     </div>
@@ -202,12 +170,12 @@ export function ToastContainer() {
 }
 
 // ── Stat card (used in Dashboard) ─────────────────────────────────────────────
-export function StatCard({ label, value, sub, tone = '', children }) {
+export function StatCard({ label, value, sub, children }) {
   return (
-    <div className={`rounded-xl border bg-white p-4 shadow-sm ${tone}`}>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1.5 text-2xl font-bold text-slate-900">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
+    <div className="kpi">
+      <small>{label?.toUpperCase()}</small>
+      <strong>{value}</strong>
+      {sub && <em>{sub}</em>}
       {children}
     </div>
   );
@@ -216,20 +184,16 @@ export function StatCard({ label, value, sub, tone = '', children }) {
 // ── Table helpers ─────────────────────────────────────────────────────────────
 export function Table({ children }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full text-left text-sm">{children}</table>
+    <div className="table-scroll">
+      <table className="cc-table">{children}</table>
     </div>
   );
 }
 
 export function Th({ children, className = '' }) {
-  return (
-    <th className={`bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 ${className}`}>
-      {children}
-    </th>
-  );
+  return <th className={className}>{children}</th>;
 }
 
 export function Td({ children, className = '' }) {
-  return <td className={`px-4 py-3 ${className}`}>{children}</td>;
+  return <td className={className}>{children}</td>;
 }
