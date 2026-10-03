@@ -6,7 +6,7 @@ import { rules } from '../config.js';
 import { HttpError } from '../utils/httpError.js';
 import { isSocialSlot } from '../utils/slots.js';
 import { getAvailability, createBooking, cancelBooking } from '../services/booking.service.js';
-import { captureLead, normPhone, publicQuote } from '../services/lead.service.js';
+import { captureLead, normPhone, normEmail, publicQuote } from '../services/lead.service.js';
 import { notifyStaff } from '../utils/notify.js';
 
 // PUBLIC routes: no login. Never expose names, member data or exact stock.
@@ -72,7 +72,7 @@ router.post('/enquiries', writeLimiter, async (req, res) => {
   if (d.website) return res.status(201).json({ ok: true });   // a bot: pretend success, store nothing
 
   const result = await withTransaction((c) =>
-    captureLead(c, { ...d, source: 'website' }));
+    captureLead(c, { ...d, email: normEmail(d.email), phone: normPhone(d.phone), source: 'website' }));
   const { lead, duplicate } = result ?? {};
   if (lead) {
     notifyStaff('new_enquiry', { id: lead.id, name: lead.name, phone: lead.phone, duplicate }).catch(() => {});

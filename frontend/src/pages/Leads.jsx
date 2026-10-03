@@ -78,12 +78,18 @@ export default function Leads() {
   const [mine, setMine] = useState(false);
   const [adding, setAdding] = useState(false);
 
-  const { data: summary } = useQuery({ queryKey: ['leads-summary'], queryFn: () => api('/leads/summary'), refetchInterval: 30_000 });
+  const { data: summary, error: summaryError } = useQuery({
+    queryKey: ['leads-summary'],
+    queryFn: () => api('/leads/summary'),
+    refetchInterval: 30_000,
+    retry: 2,
+  });
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ['leads', tab, search, due, mine],
     queryFn: () => api(`/leads?status=${tab}&search=${encodeURIComponent(search)}${due ? '&due=1' : ''}${mine ? '&mine=1' : ''}`),
     placeholderData: (prev) => prev,
     refetchInterval: 30_000,
+    retry: 2,
   });
 
   const count = (key) => (key === 'open' ? summary?.open_count : summary?.by_status?.[key]) ?? 0;
@@ -95,6 +101,13 @@ export default function Leads() {
         <h1 className="text-2xl font-bold">Enquiries</h1>
         <button className={btnCls} onClick={() => setAdding(true)}>+ Log enquiry</button>
       </div>
+
+      {summaryError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <b>Enquiries data could not be loaded.</b> {summaryError.message}
+          <button className="ml-2 underline" onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-1.5">
         {TABS.map(([key, label]) => (
@@ -111,13 +124,14 @@ export default function Leads() {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Assigned to me</label>
       </div>
 
+      {isLoading && <div className="rounded-xl border bg-white p-4 text-sm text-slate-500">Loading enquiries…</div>}
+
       <div className="overflow-x-auto rounded-xl border bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-100 text-xs uppercase text-slate-500">
             <tr><th className="p-3">Name</th><th className="p-3">Phone</th><th className="p-3">Source</th><th className="p-3">Interested in</th><th className="p-3">Status</th><th className="p-3">Follow up</th><th className="p-3">Owner</th></tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td className="p-3" colSpan={7}>Loading…</td></tr>}
             {leads.map((l) => {
               const open = !['converted', 'lost'].includes(l.status);
               const overdue = open && l.next_follow_up && l.next_follow_up <= today;

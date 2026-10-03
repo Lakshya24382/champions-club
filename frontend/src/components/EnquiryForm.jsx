@@ -50,7 +50,12 @@ export default function EnquiryForm({ plans = [] }) {
       </Field>
       {/* Honeypot: invisible to people, tempting to bots */}
       <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={f.website} onChange={set('website')} />
-      {send.error && <p className="text-sm text-red-600">{send.error.message}</p>}
+      {send.error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <span>{send.error.message}</span>{' '}
+          <button type="button" className="font-medium underline" onClick={() => send.reset()}>Try again</button>
+        </div>
+      )}
       <button className={btnCls} disabled={send.isPending}>{send.isPending ? 'Sending…' : 'Send enquiry'}</button>
     </form>
   );

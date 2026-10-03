@@ -3,7 +3,11 @@ import { HttpError } from '../utils/httpError.js';
 import { createMember } from './member.service.js';
 
 // "98765 43210" and "+91-98765-43210" must count as the same kind of thing: keep digits and "+".
-export const normPhone = (p) => p.replace(/[^\d+]/g, '');
+export const normPhone = (p = '') => p.replace(/[^\d+]/g, '');
+export const normEmail = (e) => {
+  const value = typeof e === 'string' ? e.trim().toLowerCase() : '';
+  return value || null;
+};
 
 export async function logActivity(db, leadId, kind, body, userId = null) {
   await db.query(
@@ -14,6 +18,7 @@ export async function logActivity(db, leadId, kind, body, userId = null) {
 // ------------------------------------------------------------ capture (public form, trial, staff)
 export async function captureLead(db, d, userId = null) {
   const phone = normPhone(d.phone);
+  const email = normEmail(d.email);
   const kind = d.trialBookingId ? 'trial' : 'enquiry';
   const text = d.message || 'Enquiry received';
 
@@ -23,7 +28,7 @@ export async function captureLead(db, d, userId = null) {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8, current_date)
      ON CONFLICT (phone) WHERE status NOT IN ('converted', 'lost') DO NOTHING
      RETURNING *`,
-    [d.name, phone, d.email ?? null, d.message ?? null, d.source ?? 'website',
+    [d.name, phone, email, d.message ?? null, d.source ?? 'website',
      d.interestedPlanId ?? null, d.status ?? 'new', d.trialBookingId ?? null]);
 
   if (created) {
@@ -42,7 +47,7 @@ export async function captureLead(db, d, userId = null) {
         updated_at = now()
       WHERE phone = $1 AND status NOT IN ('converted', 'lost')
       RETURNING *`,
-    [phone, d.email ?? null, d.interestedPlanId ?? null, d.trialBookingId ?? null]);
+    [phone, email, d.interestedPlanId ?? null, d.trialBookingId ?? null]);
   if (!lead) throw new HttpError(409, 'Please try again');
   await logActivity(db, lead.id, kind, `Contacted us again: ${text}`, userId);
   return { lead, duplicate: true };

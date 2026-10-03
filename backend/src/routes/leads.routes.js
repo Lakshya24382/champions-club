@@ -10,10 +10,12 @@ const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const phoneStr = z.string().trim().regex(/^[0-9+\-\s()]{7,20}$/, 'Enter a valid phone number');
 
 router.get('/summary', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.json(await leads.leadSummary());
 });
 
 router.get('/', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const q = z.object({
     status: z.enum(['open', 'all', 'new', 'contacted', 'quoted', 'trial_booked', 'converted', 'lost']).default('open'),
     search: z.string().default(''),
@@ -28,7 +30,7 @@ router.get('/', async (req, res) => {
 const createSchema = z.object({
   name: z.string().trim().min(2).max(100),
   phone: phoneStr,
-  email: z.email().nullish(),
+  email: z.string().trim().email('Enter a valid email address').nullish(),
   message: z.string().trim().max(1000).nullish(),
   source: z.enum(['phone', 'walk_in', 'referral', 'other']).default('phone'),
   interestedPlanId: z.number().int().positive().nullish(),
