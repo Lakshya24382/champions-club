@@ -49,6 +49,31 @@ function MemberLogin({ onLogin }) {
 
 function MemberDashboard({ member, onLogout }) {
   const memberToken = localStorage.getItem('cc_member_token');
+  const [selectedPlan, setSelectedPlan] = useState('');
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const { data: membershipPlans = [] } = useQuery({ queryKey: ['public-plans'], queryFn: () => api('/plans') });
+
+  const startMembershipPayment = async () => {
+    setPaymentBusy(true); setPaymentMessage(''); setPaymentError('');
+    try {
+      if (!window.Razorpay) {
+        await new Promise((resolve, reject) => {
+          const existing = document.querySelector('script[data-razorpay-checkout]');
+          if (existing) { existing.addEventListener('load', resolve, { once: true }); existing.addEventListener('error', reject, { once: true }); return; }
+          const script = document.createElement('script'); script.src = 'https://checkout.razorpay.com/v1/checkout.js'; script.dataset.razorpayCheckout = 'true'; script.onload = resolve; script.onerror = reject; document.body.appendChild(script);
+        });
+      }
+      const order = await api('/member/payments/order', { method: 'POST', authToken: memberToken, body: { planId: Number(selectedPlan) } });
+      await new Promise((resolve, reject) => {
+        const checkout = new window.Razorpay({ key: order.keyId, amount: order.amount, currency: order.currency, name: 'Champions Club', description: `${order.planName} membership`, order_id: order.orderId, prefill: { name: info.full_name || info.name || '', email: info.email || '', contact: info.phone || '' }, theme: { color: '#176044' },
+          handler: async (response) => { try { await api('/member/payments/verify', { method: 'POST', authToken: memberToken, body: { orderId: response.razorpay_order_id, paymentId: response.razorpay_payment_id, signature: response.razorpay_signature } }); setPaymentMessage('Payment verified. Your membership has been updated. Refreshing profile…'); window.location.reload(); resolve(); } catch (err) { reject(err); } },
+          modal: { ondismiss: () => reject(new Error('Payment was cancelled. You can try again.')) }
+        }); checkout.on('payment.failed', (response) => reject(new Error(response.error?.description || 'Payment failed'))); checkout.open();
+      });
+    } catch (err) { setPaymentError(err.message || 'Unable to start payment'); } finally { setPaymentBusy(false); }
+  };
   const { data: bookings = [], isLoading: bookingsLoading, error: bookingsError } = useQuery({
     queryKey: ['member-bookings', member.id],
     queryFn: () => api('/member/bookings', { authToken: memberToken }),
@@ -132,6 +157,21 @@ function MemberDashboard({ member, onLogout }) {
             <b>Your membership has expired.</b> Please visit the front desk or call us to renew.
           </div>
         )}
+
+        {/* Online membership renewal / plan payment */}
+        <section style={{ background: '#fff', border: '1px solid #dfe6e2', borderRadius: 16, padding: 24, marginBottom: 20 }}>
+          <h2 style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 16, margin: '0 0 8px', color: '#0a202b' }}>Pay or renew membership</h2>
+          <p style={{ color: '#718079', fontSize: 12, margin: '0 0 14px' }}>Choose a plan and pay securely using UPI, cards, net banking, or other methods available in Razorpay Checkout.</p>
+          <label htmlFor="membership-plan-payment" style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 6 }}>Membership plan</label>
+          <select id="membership-plan-payment" value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)} style={{ width: '100%', padding: 11, border: '1px solid #cbd5d1', borderRadius: 9, marginBottom: 12, background: '#fff' }}>
+            <option value="">Select a plan</option>
+            {membershipPlans.map((p) => <option key={p.id} value={p.id}>{p.name} — {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(p.price)}</option>)}
+          </select>
+          {paymentError && <p role="alert" style={{ color: '#984848', fontSize: 12, marginBottom: 10 }}>{paymentError}</p>}
+          {paymentMessage && <p role="status" style={{ color: '#176044', fontSize: 12, marginBottom: 10 }}>{paymentMessage}</p>}
+          <button type="button" disabled={!selectedPlan || paymentBusy} onClick={startMembershipPayment} style={{ width: '100%', border: 0, borderRadius: 9, padding: 12, background: '#176044', color: '#fff', fontWeight: 700, cursor: !selectedPlan || paymentBusy ? 'not-allowed' : 'pointer', opacity: !selectedPlan || paymentBusy ? .6 : 1 }}>{paymentBusy ? 'Opening secure checkout…' : 'Continue to payment'}</button>
+          <p style={{ color: '#8a9992', fontSize: 10, marginTop: 9 }}>Membership is updated only after the server verifies a captured payment.</p>
+        </section>
 
         {/* Discounts */}
         <div style={{ background: '#fff', borderRadius: 16, padding: 24, marginBottom: 20, border: '1px solid #dfe6e2' }}>

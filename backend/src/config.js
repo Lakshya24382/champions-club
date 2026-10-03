@@ -7,6 +7,8 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'dev-only-change-this-secret',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   tz: process.env.CLUB_TZ || 'Asia/Kolkata',
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
   db: {
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT) || 5432,

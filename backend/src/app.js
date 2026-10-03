@@ -24,6 +24,7 @@ import expensesRoutes from './routes/expenses.routes.js';
 import hrRoutes from './routes/hr.routes.js';
 import sharedReportRoutes from './routes/sharedReport.routes.js';
 import memberRoutes from './routes/member.routes.js';
+import memberPaymentsRoutes from './routes/memberPayments.routes.js';
 
 const app = express();
 const managers = requireRole('owner', 'admin');
@@ -66,6 +67,7 @@ app.use('/api/catalog', catalogRoutes);
 app.use('/api/public/report', sharedReportRoutes); // frozen, shared owner reports
 app.use('/api/public', publicRoutes);
 app.use('/api/member', requireAuth, memberRoutes);
+app.use('/api/member/payments', requireAuth, memberPaymentsRoutes);
 
 // ── Staff routes (JWT required) ────────────────────────────────────────────────
 app.use('/api/members',  requireAuth, staffOnly, membersRoutes);
