@@ -29,6 +29,7 @@ import Expenses from './pages/Expenses.jsx';
 import Payroll from './pages/Payroll.jsx';
 import Staff from './pages/Staff.jsx';
 import MemberPortal from './pages/MemberPortal.jsx';
+import MemberSignup from './pages/MemberSignup.jsx';
 
 function Protected() {
   const { user, loading } = useAuth();
@@ -55,6 +56,7 @@ export default function App() {
       <Route path="/shop" element={<Storefront />} />
       <Route path="/login" element={<Login />} />
       <Route path="/member-portal" element={<MemberPortal />} />
+      <Route path="/member-signup" element={<MemberSignup />} />
 
       {/* Staff */}
       <Route element={<Protected />}>

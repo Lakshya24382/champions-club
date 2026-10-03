@@ -27,7 +27,7 @@ export async function api(path, { method = 'GET', body, authToken } = {}) {
   // Only the staff session is managed by AuthProvider. Member-portal requests
   // pass their token explicitly and must not unexpectedly redirect to /login.
   // Returning the 401 lets the member portal clear its own session cleanly.
-  if (res.status === 401 && path !== '/auth/login' && !authToken) {
+  if (res.status === 401 && !['/auth/login', '/auth/member-login'].includes(path) && !authToken) {
     setToken(null);
     window.location.href = '/login';
     return;

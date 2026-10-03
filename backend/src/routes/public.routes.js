@@ -8,6 +8,7 @@ import { isSocialSlot } from '../utils/slots.js';
 import { getAvailability, createBooking, cancelBooking } from '../services/booking.service.js';
 import { captureLead, normPhone, normEmail, publicQuote } from '../services/lead.service.js';
 import { notifyStaff } from '../utils/notify.js';
+import { ageOn } from '../utils/dates.js';
 
 // PUBLIC routes: no login. Never expose names, member data or exact stock.
 const router = Router();
@@ -48,6 +49,47 @@ router.get('/overview', async (_req, res) => {
     social: rules.social,
     sessionMin: rules.sessionMin,
   });
+});
+
+
+// ---- public membership signup
+const signupSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  phone: phoneStr,
+  email: z.string().email().optional().or(z.literal('')),
+  dateOfBirth: dateStr,
+  gender: z.enum(['male', 'female', 'other']).optional().or(z.literal('')),
+  emergencyContact: z.string().trim().max(120).optional(),
+  planId: z.number().int().positive(),
+});
+
+router.post('/member-signup', writeLimiter, async (req, res) => {
+  const d = signupSchema.parse(req.body);
+  if (d.dateOfBirth > new Date().toISOString().slice(0, 10)) throw new HttpError(400, 'Date of birth cannot be in the future');
+  const phone = normPhone(d.phone);
+  const email = d.email ? normEmail(d.email) : null;
+  const member = await withTransaction(async (c) => {
+    const { rows: [plan] } = await c.query(
+      'SELECT * FROM membership_plans WHERE id = $1 AND is_active', [d.planId]);
+    if (!plan) throw new HttpError(404, 'Selected membership plan is unavailable');
+    if (plan.max_age != null && ageOn(d.dateOfBirth) > plan.max_age) {
+      throw new HttpError(400, `${plan.name} is only for members aged ${plan.max_age} or under`);
+    }
+    const { rows: [existing] } = await c.query(
+      `SELECT id FROM members WHERE phone = $1 OR ($2::text IS NOT NULL AND lower(email) = lower($2)) FOR UPDATE`,
+      [phone, email]);
+    if (existing) throw new HttpError(409, 'A membership already exists with this phone number or email');
+    const { rows: [created] } = await c.query(
+      `INSERT INTO members (full_name, phone, email, date_of_birth, gender, emergency_contact, plan_id, expires_on)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,current_date + $8::int) RETURNING id, member_code, full_name, phone, email, expires_on`,
+      [d.fullName, phone, email, d.dateOfBirth, d.gender || null, d.emergencyContact || null, plan.id, plan.duration_days]);
+    await c.query(
+      `INSERT INTO membership_events (member_id, plan_id, event_type, starts_on, ends_on, amount, created_by)
+       VALUES ($1,$2,'joined',current_date,$3,$4,NULL)`,
+      [created.id, plan.id, created.expires_on, plan.price]);
+    return { ...created, plan_name: plan.name };
+  });
+  res.status(201).json({ ok: true, member, message: 'Registration successful. Save your member code for portal access.' });
 });
 
 // ---- "what is free this week": slot states only
