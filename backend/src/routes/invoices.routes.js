@@ -12,7 +12,7 @@ const clientSchema = z.object({
   name: z.string().trim().min(2).max(120),
   contactPerson: z.string().trim().max(100).nullish(),
   phone: z.string().trim().max(30).nullish(),
-  email: z.email().nullish(),
+  email: z.string().email().nullish(),
   gstin: z.string().trim().max(20).nullish(),
   address: z.string().trim().max(300).nullish(),
 });

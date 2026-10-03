@@ -20,7 +20,7 @@ const employeeSchema = z.object({
   jobTitle: z.string().trim().min(2).max(100),
   monthlySalary: z.number().nonnegative(),
   joinedOn: dateStr,
-  loginEmail: z.email().nullable(),
+  loginEmail: z.string().email().nullable(),
 });
 
 router.get('/employees', managers, async (_req, res) => res.json(await payroll.listEmployees()));

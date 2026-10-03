@@ -26,6 +26,11 @@ function PayButtons({ path, id }) {
 export default function Collections() {
   const { data, isLoading } = useQuery({ queryKey: ['collections'], queryFn: () => api('/finance/collections') });
   if (isLoading) return <p>Loading…</p>;
+  if (!data) return (
+    <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      Could not load collections. Please refresh the page.
+    </p>
+  );
 
   const owedB = data.bookings.reduce((a, b) => a + b.price, 0);
   const owedM = data.memberships.reduce((a, m) => a + m.amount, 0);

@@ -16,6 +16,11 @@ export default function Dashboard() {
   });
 
   if (isLoading) return <PageLoader />;
+  if (!s) return (
+    <div className="cc-alert error" style={{ marginTop: 24 }}>
+      Could not load dashboard data. Check your connection and refresh the page.
+    </div>
+  );
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',

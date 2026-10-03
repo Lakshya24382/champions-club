@@ -7,16 +7,16 @@ export function requireAuth(req, _res, next) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
 
   if (!token) {
-    throw new HttpError(401, 'Authentication required');
+    return next(new HttpError(401, 'Authentication required'));
   }
 
   try {
     req.user = jwt.verify(token, config.jwtSecret); // { sub, name, role }
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
-      throw new HttpError(401, 'Session expired — please log in again');
+      return next(new HttpError(401, 'Session expired — please log in again'));
     }
-    throw new HttpError(401, 'Invalid token — please log in again');
+    return next(new HttpError(401, 'Invalid token — please log in again'));
   }
 
   next();
@@ -25,8 +25,11 @@ export function requireAuth(req, _res, next) {
 export const requireRole =
   (...roles) =>
   (req, _res, next) => {
+    if (!req.user) {
+      return next(new HttpError(401, 'Authentication required'));
+    }
     if (!roles.includes(req.user.role)) {
-      throw new HttpError(403, 'You do not have permission to perform this action');
+      return next(new HttpError(403, 'You do not have permission to perform this action'));
     }
     next();
   };
