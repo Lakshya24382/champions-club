@@ -84,11 +84,15 @@ function MemberDashboard({ member, onLogout }) {
     enabled: !!memberToken,
   });
 
-  const info = member;
-  const expiresDate = new Date(info.expires_on);
-  const daysLeft = Math.ceil((expiresDate - new Date()) / 86400000);
-  const isExpiring = daysLeft <= 30;
-  const isExpired = daysLeft < 0;
+  const info = member || {};
+  // API/JWT payloads can omit profile fields; keep the dashboard render-safe.
+  const fullName = String(info.full_name ?? info.name ?? 'Member').trim() || 'Member';
+  const firstName = fullName.split(/\s+/)[0];
+  const expiresDate = info.expires_on ? new Date(info.expires_on) : null;
+  const hasValidExpiry = expiresDate && !Number.isNaN(expiresDate.getTime());
+  const daysLeft = hasValidExpiry ? Math.ceil((expiresDate - new Date()) / 86400000) : null;
+  const isExpiring = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
+  const isExpired = daysLeft !== null && daysLeft < 0;
 
   return (
     <div style={{ minHeight: '100vh', background: '#f4f6f3', fontFamily: "'DM Sans', sans-serif" }}>
@@ -110,7 +114,7 @@ function MemberDashboard({ member, onLogout }) {
         {/* Welcome */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'Manrope', fontSize: 28, fontWeight: 800, margin: '0 0 4px', color: '#0a202b' }}>
-            Welcome, {info.full_name.split(' ')[0]}! 👋
+            Welcome, {firstName}! 👋
           </h1>
           <p style={{ color: '#718079', fontSize: 14 }}>
             Member code: <b style={{ fontFamily: 'monospace', color: '#0a202b' }}>{info.member_code}</b>
@@ -126,7 +130,7 @@ function MemberDashboard({ member, onLogout }) {
             <div>
               <div style={{ fontSize: 10, color: '#8fa69d', letterSpacing: 1.5, marginBottom: 8 }}>MEMBERSHIP PLAN</div>
               <div style={{ fontFamily: 'Manrope', fontSize: 22, fontWeight: 800, color: '#b8df55' }}>{info.plan_name}</div>
-              <div style={{ fontSize: 12, color: '#8fa69d', marginTop: 4 }}>{info.plan_code} · {info.full_name}</div>
+              <div style={{ fontSize: 12, color: '#8fa69d', marginTop: 4 }}>{info.plan_code || 'Membership'} · {fullName}</div>
             </div>
             <div className="brand-mark" style={{ background: 'rgba(184,223,85,.15)', color: '#b8df55', fontFamily: 'Manrope', fontWeight: 800 }}>CC</div>
           </div>
@@ -135,13 +139,13 @@ function MemberDashboard({ member, onLogout }) {
             <div>
               <div style={{ fontSize: 9, color: '#8fa69d', letterSpacing: 1.5 }}>VALID UNTIL</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: isExpired ? '#f87171' : isExpiring ? '#fbbf24' : '#fff' }}>
-                {info.expires_on}
+                {hasValidExpiry ? expiresDate.toLocaleDateString('en-IN') : 'Not available'}
               </div>
             </div>
             <div>
               <div style={{ fontSize: 9, color: '#8fa69d', letterSpacing: 1.5 }}>STATUS</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: isExpired ? '#f87171' : isExpiring ? '#fbbf24' : '#b8df55' }}>
-                {isExpired ? 'EXPIRED' : isExpiring ? `${daysLeft} DAYS LEFT` : 'ACTIVE'}
+                {isExpired ? 'EXPIRED' : isExpiring ? `${daysLeft} DAYS LEFT` : hasValidExpiry ? 'ACTIVE' : 'STATUS UNAVAILABLE'}
               </div>
             </div>
           </div>
