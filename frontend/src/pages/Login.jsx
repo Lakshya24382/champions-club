@@ -5,10 +5,10 @@ import { useAuth } from '../auth.jsx';
 export default function Login() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail]       = useState('owner@champions.club');
+  const [email, setEmail]     = useState('owner@champions.club');
   const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [error, setError]     = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (user) return <Navigate to="/dashboard" replace />;
 
@@ -28,23 +28,20 @@ export default function Login() {
 
   return (
     <div className="login-shell">
-      {/* Left — visual panel */}
+      {/* ── Left panel ── */}
       <div className="login-visual">
         <div className="login-brand">
           <div className="brand-mark">CC</div>
           <div className="login-brand-text">
-            <b>CHAMPIONS</b>
-            <small>CLUB MANAGEMENT</small>
+            <b>CHAMPIONS CLUB</b>
+            <small>MANAGEMENT SYSTEM</small>
           </div>
         </div>
 
         <div className="login-hero">
           <div className="eyebrow">STAFF PORTAL</div>
-          <h1>Manage your<br /><em>club</em> smarter.</h1>
-          <p>
-            Courts, members, bar, shop, finance — everything you need to run
-            Champions Club, in one place.
-          </p>
+          <h1>Run your<br /><em>club</em> smarter.</h1>
+          <p>Courts, members, bar, shop, finance — every part of Champions Club, unified in one platform.</p>
         </div>
 
         <div className="visual-grid">
@@ -56,23 +53,23 @@ export default function Login() {
           <div className="visual-card">
             <div className="ball-art"><span /></div>
             <b>MEMBERS</b>
-            <small>CRM &amp; PLANS</small>
+            <small>CRM & PLANS</small>
           </div>
           <div className="visual-card">
             <div className="club-art"><span>CC</span></div>
             <b>FINANCE</b>
-            <small>REPORTS &amp; P&amp;L</small>
+            <small>REPORTS & P&L</small>
           </div>
         </div>
 
         <div className="login-stat-strip">
           <div className="login-stat"><b>4</b><small>SPORTS</small></div>
-          <div className="login-stat"><b>∞</b><small>BOOKINGS</small></div>
-          <div className="login-stat"><b>24/7</b><small>AVAILABLE</small></div>
+          <div className="login-stat"><b>3</b><small>PLAN TIERS</small></div>
+          <div className="login-stat"><b>24/7</b><small>ONLINE</small></div>
         </div>
       </div>
 
-      {/* Right — login form */}
+      {/* ── Right panel ── */}
       <div className="login-panel">
         <div className="login-card">
           <div className="login-card-head">
@@ -91,6 +88,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              placeholder="you@champions.club"
               required
             />
 
@@ -101,20 +99,31 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
+              placeholder="••••••••"
               required
             />
 
-            {error && <div className="login-error">{error}</div>}
+            {error && <div className="login-error">⚠ {error}</div>}
 
             <button type="submit" className="login-submit" disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in to Club Management'}
-              <span className="login-submit-arrow">→</span>
+              {loading ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin .7s linear infinite' }}>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                    <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.3)" strokeWidth="3"/>
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="#fff" strokeWidth="3" strokeLinecap="round"/>
+                  </svg>
+                  Signing in…
+                </>
+              ) : (
+                <>Sign in to Club Management<span className="login-submit-arrow">→</span></>
+              )}
             </button>
           </form>
 
           <div className="login-footer">
             <span>v2.0 · Champions Club</span>
-            <b>Staff only</b>
+            <b>Staff only · Members use the portal</b>
           </div>
 
           <a href="/" className="back-to-site">← Back to public website</a>

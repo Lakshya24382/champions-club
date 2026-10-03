@@ -3,7 +3,27 @@ import { Link } from 'react-router';
 import { api } from '../api';
 import { money, PageLoader } from '../components/ui.jsx';
 
-const BAR_HEIGHTS = [32, 46, 39, 58, 51, 67, 61, 74, 68, 86, 72, 80];
+const BAR_HEIGHTS = [28, 42, 36, 55, 48, 64, 58, 71, 65, 82, 69, 78];
+
+function MiniBar({ pct, delay = 0 }) {
+  return (
+    <div className="bar-item">
+      <div
+        className="bar"
+        style={{
+          height: `${pct}%`,
+          animation: `bar-grow .5s cubic-bezier(.4,0,.2,1) ${delay}s both`,
+        }}
+      />
+      <style>{`
+        @keyframes bar-grow {
+          from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+          to   { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { data: s, isLoading } = useQuery({
@@ -17,25 +37,25 @@ export default function Dashboard() {
 
   if (isLoading) return <PageLoader />;
   if (!s) return (
-    <div className="cc-alert error" style={{ marginTop: 24 }}>
-      Could not load dashboard data. Check your connection and refresh the page.
+    <div className="cc-alert error">
+      Could not load dashboard data. Check your connection and refresh.
     </div>
   );
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
-
   const attention = ls?.attention_count ?? 0;
+  const totalRevToday = s.court_revenue_today + s.shop_revenue_today + s.bar_revenue_today;
 
   return (
     <>
-      {/* Page intro */}
+      {/* Page header */}
       <div className="page-intro">
         <div>
           <div className="eyebrow dark">COURT OPERATIONS</div>
           <h2>Club Overview</h2>
-          <p>Monitor today's activity — members, bookings, bar, and shop at a glance.</p>
+          <p>Today's activity — courts, members, bar and shop at a glance.</p>
         </div>
         <div className="date-card">
           <span>TODAY</span>
@@ -45,21 +65,26 @@ export default function Dashboard() {
 
       {/* Attention banners */}
       {(attention > 0 || s.low_stock_items > 0) && (
-        <div style={{ marginBottom: 18, display: 'grid', gap: 8 }}>
+        <div style={{ marginBottom: 20, display: 'grid', gap: 8 }}>
           {attention > 0 && (
             <Link to="/leads">
-              <div className="cc-alert warning">
-                <b>Enquiries need attention —</b> {ls.new_count} new{' '}
-                {ls.new_count === 1 ? 'enquiry' : 'enquiries'} and {ls.due_count} follow-up
-                {ls.due_count === 1 ? '' : 's'} due today.
+              <div className="cc-alert warning" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>🔔</span>
+                <span>
+                  <b>Enquiries need attention —</b> {ls.new_count} new and {ls.due_count} follow-up{ls.due_count !== 1 ? 's' : ''} due today.
+                  <span style={{ marginLeft: 8, fontWeight: 800, opacity: .7 }}>View →</span>
+                </span>
               </div>
             </Link>
           )}
           {s.low_stock_items > 0 && (
             <Link to="/inventory">
-              <div className="cc-alert error">
-                <b>Low stock:</b> {s.low_stock_items} product
-                {s.low_stock_items > 1 ? 's are' : ' is'} running low. Review inventory.
+              <div className="cc-alert error" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>⚠</span>
+                <span>
+                  <b>Low stock:</b> {s.low_stock_items} product{s.low_stock_items > 1 ? 's are' : ' is'} running low.
+                  <span style={{ marginLeft: 8, fontWeight: 800, opacity: .7 }}>Review →</span>
+                </span>
               </div>
             </Link>
           )}
@@ -68,36 +93,22 @@ export default function Dashboard() {
 
       {/* KPI cards */}
       <div className="kpi-grid">
-        <Link to="/bookings" style={{ textDecoration: 'none' }}>
-          <div className="kpi">
-            <span className="kpi-icon green">▦</span>
-            <small>BOOKINGS TODAY</small>
-            <strong>{s.bookings_today}</strong>
-            <em>Live court schedule</em>
-          </div>
-        </Link>
-        <Link to="/members" style={{ textDecoration: 'none' }}>
-          <div className="kpi">
-            <span className="kpi-icon blue">♙</span>
-            <small>ACTIVE MEMBERS</small>
-            <strong>{s.active_members}</strong>
-            <em>Current membership base</em>
-          </div>
-        </Link>
-        <div className="kpi">
-          <span className="kpi-icon purple">₹</span>
-          <small>REVENUE TODAY</small>
-          <strong>{money(s.court_revenue_today + s.shop_revenue_today + s.bar_revenue_today)}</strong>
-          <em>All areas combined</em>
-        </div>
-        <Link to="/inventory" style={{ textDecoration: 'none' }}>
-          <div className="kpi">
-            <span className="kpi-icon amber">!</span>
-            <small>LOW STOCK</small>
-            <strong>{s.low_stock_items}</strong>
-            <em>Items need attention</em>
-          </div>
-        </Link>
+        {[
+          { to: '/bookings', icon: '📅', color: 'green', label: 'BOOKINGS TODAY', value: s.bookings_today, sub: 'Live court schedule' },
+          { to: '/members',  icon: '🎾', color: 'blue',  label: 'ACTIVE MEMBERS', value: s.active_members, sub: 'Current membership base' },
+          { to: null,        icon: '₹',  color: 'purple',label: 'REVENUE TODAY',  value: money(totalRevToday), sub: 'All areas combined' },
+          { to: '/inventory',icon: '⚠',  color: 'amber', label: 'LOW STOCK',      value: s.low_stock_items, sub: 'Items need attention' },
+        ].map(({ to, icon, color, label, value, sub }, i) => {
+          const card = (
+            <div className="kpi" style={{ animationDelay: `${i * .06}s` }}>
+              <span className={`kpi-icon ${color}`}>{icon}</span>
+              <small>{label}</small>
+              <strong>{value}</strong>
+              <em>{sub}</em>
+            </div>
+          );
+          return to ? <Link key={label} to={to} style={{ textDecoration: 'none' }}>{card}</Link> : <div key={label}>{card}</div>;
+        })}
       </div>
 
       {/* Main grid */}
@@ -105,7 +116,7 @@ export default function Dashboard() {
         {/* Left column */}
         <div style={{ display: 'grid', gap: 18 }}>
 
-          {/* Revenue overview */}
+          {/* Revenue */}
           <section className="panel revenue-panel">
             <div className="panel-title">
               <div>
@@ -117,34 +128,48 @@ export default function Dashboard() {
             </div>
             <div className="revenue-chart">
               <div className="revenue-number">
-                <strong>{money(s.court_revenue_today + s.shop_revenue_today + s.bar_revenue_today)}</strong>
+                <strong>{money(totalRevToday)}</strong>
                 <span>Today's recorded revenue</span>
+                <div style={{ display: 'grid', gap: 8, marginTop: 18 }}>
+                  {[
+                    { label: 'Courts', value: s.court_revenue_today, color: '#8ab84a' },
+                    { label: 'Shop',   value: s.shop_revenue_today,  color: '#5fa8c8' },
+                    { label: 'Bar',    value: s.bar_revenue_today,   color: '#d4a438' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: 'var(--muted)', flex: 1 }}>{label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{money(value)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="bars">
-                {BAR_HEIGHTS.map((h, i) => (
-                  <div key={i} className="bar-item">
-                    <div className="bar" style={{ height: `${h}%` }} />
-                  </div>
-                ))}
+                {BAR_HEIGHTS.map((h, i) => <MiniBar key={i} pct={h} delay={i * .03} />)}
               </div>
             </div>
           </section>
 
           {/* Area breakdown */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
             {[
-              { label: 'Courts', icon: '▦', color: 'green', today: s.court_revenue_today, month: s.court_revenue_month, link: '/bookings' },
-              { label: 'Shop',   icon: '□', color: 'blue',  today: s.shop_revenue_today,  month: s.shop_revenue_month,  link: '/pos' },
-              { label: 'Bar',    icon: '◈', color: 'amber', today: s.bar_revenue_today,   month: s.bar_revenue_month,   link: '/bar' },
-            ].map(({ label, icon, color, today: t, month: m, link }) => (
+              { label: 'Courts', today: s.court_revenue_today, month: s.court_revenue_month, link: '/bookings', color: '#edf6d9', dot: '#8ab84a', icon: '📅' },
+              { label: 'Shop',   today: s.shop_revenue_today,  month: s.shop_revenue_month,  link: '/pos',      color: '#e4f0f6', dot: '#5fa8c8', icon: '🛒' },
+              { label: 'Bar',    today: s.bar_revenue_today,   month: s.bar_revenue_month,   link: '/bar',      color: '#faf0d8', dot: '#d4a438', icon: '🍺' },
+            ].map(({ label, today: t, month: m, link, color, dot, icon }) => (
               <Link key={label} to={link} style={{ textDecoration: 'none' }}>
-                <div className="panel" style={{ padding: '15px' }}>
-                  <div className="panel-title" style={{ marginBottom: 10 }}>
+                <div className="panel" style={{ padding: 18 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                     <div className="section-kicker">{label.toUpperCase()}</div>
-                    <span className={`action-icon ${color}`} style={{ width: 26, height: 26, borderRadius: 7, fontSize: 11 }}>{icon}</span>
+                    <div style={{ width: 32, height: 32, borderRadius: 9, background: color, display: 'grid', placeItems: 'center', fontSize: 14 }}>{icon}</div>
                   </div>
-                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 22, fontWeight: 800 }}>{money(t)}</div>
-                  <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>Today · {money(m)} this month</div>
+                  <div style={{ fontFamily: 'Manrope', fontSize: 24, fontWeight: 800, color: 'var(--ink)' }}>{money(t)}</div>
+                  <div style={{ fontSize: 9.5, color: 'var(--muted)', marginTop: 4 }}>
+                    Today · <span style={{ fontWeight: 700 }}>{money(m)}</span> this month
+                  </div>
+                  <div style={{ marginTop: 12, height: 3, borderRadius: 3, background: 'var(--line2)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: 3, background: dot, width: `${Math.min(100, (t / (m || 1)) * 100 * 30)}%`, transition: 'width 1s ease' }} />
+                  </div>
                 </div>
               </Link>
             ))}
@@ -154,22 +179,21 @@ export default function Dashboard() {
           <section className="panel">
             <div className="panel-title">
               <div>
-                <div className="section-kicker">CRM</div>
+                <div className="section-kicker">CRM PIPELINE</div>
                 <h3>Enquiries & Growth</h3>
               </div>
-              <Link to="/leads" className="link-btn">Manage enquiries →</Link>
+              <Link to="/leads" className="link-btn">Manage →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
               {[
-                { label: 'NEW', value: ls?.new_count ?? 0, sub: 'Enquiries' },
-                { label: 'DUE', value: ls?.due_count ?? 0, sub: 'Follow-ups today' },
-                { label: 'OPEN', value: ls?.open_count ?? 0, sub: 'In pipeline' },
-                { label: 'CONVERTED', value: ls?.converted_month ?? 0, sub: 'This month' },
-              ].map(({ label, value, sub }) => (
-                <div key={label} style={{ textAlign: 'center', padding: '12px 8px', background: '#f7f9f7', borderRadius: 9 }}>
-                  <div style={{ fontSize: 8, letterSpacing: '1px', fontWeight: 800, color: '#7a8b84' }}>{label}</div>
-                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>{value}</div>
-                  <div style={{ fontSize: 9, color: 'var(--muted)' }}>{sub}</div>
+                { label: 'NEW',       value: ls?.new_count ?? 0,       bg: '#e4f0f6', color: '#2d6882' },
+                { label: 'DUE TODAY', value: ls?.due_count ?? 0,       bg: '#faf0d8', color: '#9b7025' },
+                { label: 'OPEN',      value: ls?.open_count ?? 0,      bg: '#f2f5f1', color: '#4a6058' },
+                { label: 'CONVERTED', value: ls?.converted_month ?? 0, bg: '#edf6d9', color: '#5a8020' },
+              ].map(({ label, value, bg, color }) => (
+                <div key={label} style={{ textAlign: 'center', padding: '14px 8px', background: bg, borderRadius: 10 }}>
+                  <div style={{ fontSize: 8, letterSpacing: '1.2px', fontWeight: 800, color }}>{label}</div>
+                  <div style={{ fontFamily: 'Manrope', fontSize: 28, fontWeight: 800, margin: '8px 0 0', color: 'var(--ink)' }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -184,17 +208,17 @@ export default function Dashboard() {
               </div>
               <Link to="/members" className="link-btn">All members →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
               {[
-                { label: 'ACTIVE',   value: s.active_members,   color: 'success' },
-                { label: 'EXPIRING', value: s.expiring_soon,    color: 'amber' },
-                { label: 'EXPIRED',  value: s.expired_members,  color: 'danger' },
-                { label: 'TOTAL',    value: s.total_members,    color: 'info' },
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ textAlign: 'center', padding: '12px 8px', background: '#f7f9f7', borderRadius: 9 }}>
-                  <div style={{ fontSize: 8, letterSpacing: '1px', fontWeight: 800, color: '#7a8b84' }}>{label}</div>
-                  <div style={{ fontFamily: 'Manrope, sans-serif', fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>{value}</div>
-                  <span className={`pill ${color}`}>{label.toLowerCase()}</span>
+                { label: 'ACTIVE',   value: s.active_members,  pillCls: 'success' },
+                { label: 'EXPIRING', value: s.expiring_soon,   pillCls: 'amber'   },
+                { label: 'EXPIRED',  value: s.expired_members, pillCls: 'danger'  },
+                { label: 'TOTAL',    value: s.total_members,   pillCls: 'info'    },
+              ].map(({ label, value, pillCls }) => (
+                <div key={label} style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--line2)', borderRadius: 10 }}>
+                  <div style={{ fontSize: 8, letterSpacing: '1.2px', fontWeight: 800, color: 'var(--muted)' }}>{label}</div>
+                  <div style={{ fontFamily: 'Manrope', fontSize: 28, fontWeight: 800, margin: '8px 0 8px', color: 'var(--ink)' }}>{value}</div>
+                  <span className={`pill ${pillCls}`}>{label.toLowerCase()}</span>
                 </div>
               ))}
             </div>
@@ -212,26 +236,18 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="action-grid">
-              <Link to="/bookings" className="action-item">
-                <span className="action-icon green">＋</span>
-                <b>New booking</b>
-                <small>Court reservation</small>
-              </Link>
-              <Link to="/members" className="action-item">
-                <span className="action-icon blue">♙</span>
-                <b>Add member</b>
-                <small>Membership CRM</small>
-              </Link>
-              <Link to="/pos" className="action-item">
-                <span className="action-icon purple">□</span>
-                <b>Shop sale</b>
-                <small>Inventory &amp; POS</small>
-              </Link>
-              <Link to="/bar" className="action-item">
-                <span className="action-icon amber">◈</span>
-                <b>Bar order</b>
-                <small>Cafeteria POS</small>
-              </Link>
+              {[
+                { to: '/bookings', icon: '📅', color: 'green',  label: 'New booking', sub: 'Court reservation' },
+                { to: '/members',  icon: '🎾', color: 'blue',   label: 'Add member',  sub: 'Membership CRM' },
+                { to: '/pos',      icon: '🛒', color: 'purple', label: 'Shop sale',   sub: 'Inventory & POS' },
+                { to: '/bar',      icon: '🍺', color: 'amber',  label: 'Bar order',   sub: 'Cafeteria POS' },
+              ].map(({ to, icon, color, label, sub }) => (
+                <Link key={to} to={to} className="action-item">
+                  <span className={`action-icon ${color}`}>{icon}</span>
+                  <b>{label}</b>
+                  <small>{sub}</small>
+                </Link>
+              ))}
             </div>
           </section>
 
@@ -245,7 +261,7 @@ export default function Dashboard() {
             </div>
             <div className="watch-list">
               <div className="watch-row">
-                <span className="watch-mark amber">!</span>
+                <span className="watch-mark amber">⚠</span>
                 <div>
                   <b>{s.low_stock_items} low-stock item{s.low_stock_items !== 1 ? 's' : ''}</b>
                   <small>Review inventory</small>
@@ -255,8 +271,8 @@ export default function Dashboard() {
               <div className="watch-row">
                 <span className="watch-mark blue">✉</span>
                 <div>
-                  <b>{attention} enquir{attention !== 1 ? 'ies' : 'y'} pending</b>
-                  <small>Leads &amp; CRM</small>
+                  <b>{attention} enqu{attention !== 1 ? 'iries' : 'iry'} pending</b>
+                  <small>Leads & CRM</small>
                 </div>
                 <Link to="/leads">→</Link>
               </div>
@@ -270,7 +286,7 @@ export default function Dashboard() {
               </div>
               {s.open_tabs > 0 && (
                 <div className="watch-row">
-                  <span className="watch-mark amber">◈</span>
+                  <span className="watch-mark blue">🍺</span>
                   <div>
                     <b>{s.open_tabs} open bar tab{s.open_tabs !== 1 ? 's' : ''}</b>
                     <small>Unpaid</small>
@@ -289,7 +305,6 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Online orders */}
           {s.open_online_orders > 0 && (
             <section className="panel">
               <div className="panel-title">
@@ -300,7 +315,7 @@ export default function Dashboard() {
                 <Link to="/orders" className="link-btn">View all →</Link>
               </div>
               <div className="watch-row" style={{ borderTop: 0 }}>
-                <span className="watch-mark amber">◫</span>
+                <span className="watch-mark amber">📦</span>
                 <div>
                   <b>{s.open_online_orders} open order{s.open_online_orders !== 1 ? 's' : ''}</b>
                   <small>Awaiting fulfilment</small>

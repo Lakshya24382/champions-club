@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// ── Class strings (mapped to v1.8 CSS variables) ─────────────────────────────
+// ── Class strings ─────────────────────────────────────────────────────────────
 export const inputCls = 'cc-input';
 export const btnCls = 'cc-btn primary';
 export const btnGhostCls = 'cc-btn secondary';
@@ -27,33 +27,50 @@ export function Field({ label, hint, children }) {
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 export function Modal({ title, onClose, size = 'md', children }) {
-  // Close on Escape key
   useEffect(() => {
     const handler = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const widths = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
+  const widths = { sm: 440, md: 580, lg: 760, xl: 980 };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="modal-overlay"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(9,32,45,.55)', padding: 16,
+        backdropFilter: 'blur(4px)',
+      }}
       onClick={onClose}
     >
       <div
-        className={`max-h-[90vh] w-full ${widths[size]} overflow-y-auto panel`} style={{ borderRadius: 16, padding: 24 }}
+        className="modal-panel"
+        style={{
+          maxHeight: '90vh', width: '100%', maxWidth: widths[size],
+          overflowY: 'auto', borderRadius: 18,
+          background: '#fff', padding: 28,
+          boxShadow: '0 24px 80px rgba(9,32,45,.22)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <h2 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 18, margin: 0 }}>{title}</h2>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 22 }}>
+          <h2 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 18, margin: 0, fontWeight: 800, color: 'var(--ink)' }}>
+            {title}
+          </h2>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 0, color: 'var(--muted)', cursor: 'pointer', padding: 4, borderRadius: 6 }}
+            style={{
+              background: 'var(--line2)', border: 0, color: 'var(--muted)',
+              cursor: 'pointer', padding: '5px 7px', borderRadius: 8,
+              display: 'grid', placeItems: 'center', flexShrink: 0,
+            }}
             aria-label="Close"
           >
-            <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z" />
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
@@ -87,20 +104,25 @@ export function PlanBadge({ code, name }) {
   return <span className={`pill ${tone}`}>{name}</span>;
 }
 
-// ── Loading states ────────────────────────────────────────────────────────────
+// ── Spinner ───────────────────────────────────────────────────────────────────
 export function Spinner({ size = 'md' }) {
-  const sizes = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-8 w-8' };
+  const px = { sm: 16, md: 22, lg: 30 }[size];
   return (
-    <svg className={`animate-spin ${sizes[size]}`} style={{ color: 'var(--green2)' }} viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    <svg
+      width={px} height={px}
+      viewBox="0 0 24 24" fill="none"
+      style={{ color: 'var(--green2)', animation: 'spin .75s linear infinite' }}
+    >
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity=".2" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }
 
 export function PageLoader() {
   return (
-    <div className="flex min-h-[200px] items-center justify-center">
+    <div style={{ display: 'flex', minHeight: 220, alignItems: 'center', justifyContent: 'center' }}>
       <Spinner size="lg" />
     </div>
   );
@@ -109,11 +131,11 @@ export function PageLoader() {
 // ── Empty state ───────────────────────────────────────────────────────────────
 export function EmptyState({ icon = '📭', title, description, action }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="text-4xl">{icon}</div>
-      <h3 className="mt-4 text-sm font-semibold text-slate-800">{title}</h3>
-      {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
-      {action && <div className="mt-5">{action}</div>}
+    <div style={{ textAlign: 'center', padding: '56px 24px' }}>
+      <div style={{ fontSize: 40, marginBottom: 14 }}>{icon}</div>
+      <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 15, fontWeight: 700, color: 'var(--ink2)', margin: '0 0 6px' }}>{title}</h3>
+      {description && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 18px' }}>{description}</p>}
+      {action && <div>{action}</div>}
     </div>
   );
 }
@@ -123,8 +145,8 @@ const ALERT_ICONS = { warning: '⚠', error: '✕', info: 'ℹ', success: '✓' 
 
 export function Alert({ type = 'info', children }) {
   return (
-    <div className={`cc-alert ${type}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-      <span style={{ flexShrink: 0 }}>{ALERT_ICONS[type]}</span>
+    <div className={`cc-alert ${type}`} style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+      <span style={{ flexShrink: 0, fontWeight: 800 }}>{ALERT_ICONS[type]}</span>
       <div>{children}</div>
     </div>
   );
@@ -150,26 +172,42 @@ export function ToastContainer() {
   useEffect(() => {
     const fn = (t) => {
       setToasts((prev) => [...prev, t]);
-      setTimeout(() => remove(t.id), 3500);
+      setTimeout(() => remove(t.id), 3800);
     };
     toastListeners.add(fn);
     return () => toastListeners.delete(fn);
   }, [remove]);
 
+  const TOAST_ICONS = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+
   return (
-    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{
+      position: 'fixed', bottom: 22, right: 22, zIndex: 200,
+      display: 'flex', flexDirection: 'column', gap: 8,
+    }}>
       {toasts.map((t) => (
-        <div key={t.id} className={`cc-alert ${t.type}`}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, boxShadow: 'var(--shadow)', minWidth: 240 }}>
-          <span style={{ flex: 1 }}>{t.message}</span>
-          <button onClick={() => remove(t.id)} style={{ background: 'none', border: 0, opacity: .6, cursor: 'pointer', fontSize: 14 }}>✕</button>
+        <div
+          key={t.id}
+          className={`cc-alert ${t.type} toast-item`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            boxShadow: 'var(--shadow-lg)', minWidth: 260, maxWidth: 360,
+            marginBottom: 0,
+          }}
+        >
+          <span style={{ fontWeight: 800, flexShrink: 0 }}>{TOAST_ICONS[t.type] ?? '✓'}</span>
+          <span style={{ flex: 1, fontSize: 12, fontWeight: 500 }}>{t.message}</span>
+          <button
+            onClick={() => remove(t.id)}
+            style={{ background: 'none', border: 0, opacity: .5, cursor: 'pointer', fontSize: 13, padding: '0 2px' }}
+          >✕</button>
         </div>
       ))}
     </div>
   );
 }
 
-// ── Stat card (used in Dashboard) ─────────────────────────────────────────────
+// ── Stat card ─────────────────────────────────────────────────────────────────
 export function StatCard({ label, value, sub, children }) {
   return (
     <div className="kpi">
