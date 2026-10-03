@@ -86,9 +86,14 @@ export async function createBooking(input, userId) {
     // 2) Validate the selected member and daily booking allowance.
     if (memberId != null) {
       const { rows: [member] } = await c.query(
-        `SELECT id, is_active, expires_on FROM members WHERE id = $1 FOR SHARE`, [memberId]);
+        `SELECT id, is_active, expires_on,
+                (expires_on < current_date) AS expired
+           FROM members
+          WHERE id = $1 FOR SHARE`, [memberId]);
       if (!member) throw new HttpError(404, 'Member not found');
-      if (!member.is_active || member.expires_on < new Date().toISOString().slice(0, 10)) {
+      // Use PostgreSQL's club-local current_date rather than the server's UTC
+      // date. This avoids midnight edge cases for the configured club timezone.
+      if (!member.is_active || member.expired) {
         throw new HttpError(409, 'This membership is inactive or expired');
       }
       const { rows: [{ n }] } = await c.query(

@@ -3,7 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import { Modal, Field, inputCls, btnCls, btnGhostCls, money, toast } from '../components/ui.jsx';
 
-const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+const todayStr = () => {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 
 const SLOT_STYLE = {
   available: 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',

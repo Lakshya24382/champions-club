@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { query } from '../db.js';
@@ -8,6 +9,14 @@ import { HttpError } from '../utils/httpError.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
+
+const memberLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many member login attempts. Please try again later.' },
+});
 
 // FIX 1 & 7: Use z.string().email() (Zod v3/v4 compatible) instead of z.email()
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
@@ -30,7 +39,7 @@ router.post('/login', async (req, res) => {
 
 // FIX 7: Member login — members log in with member_code + phone (no password)
 // Returns a limited-scope token for the member portal
-router.post('/member-login', async (req, res) => {
+router.post('/member-login', memberLoginLimiter, async (req, res) => {
   const d = z.object({
     memberCode: z.string().trim().min(3),
     phone: z.string().trim().min(7),
@@ -74,8 +83,12 @@ router.get('/users', requireAuth, requireRole('owner', 'admin'), async (_req, re
 
 router.post('/users', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
   const d = userSchema.parse(req.body);
-  const hash = await hashPassword(d.password);
   const normalizedEmail = d.email.trim().toLowerCase();
+  const { rows: [existing] } = await query(
+    'SELECT id FROM users WHERE lower(email) = $1', [normalizedEmail]);
+  if (existing) throw new HttpError(409, 'A user with this email already exists');
+
+  const hash = await hashPassword(d.password);
   const { rows: [user] } = await query(
     `INSERT INTO users (name, email, password_hash, role)
      VALUES ($1, $2, $3, $4)

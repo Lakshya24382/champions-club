@@ -11,6 +11,7 @@ export default function InvoiceDetail() {
   const [method, setMethod] = useState('upi');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const { data: inv, isLoading, error } = useQuery({ queryKey: ['invoice', id], queryFn: () => api(`/invoices/${id}`) });
 
@@ -32,6 +33,8 @@ export default function InvoiceDetail() {
 
 
   const handleDownloadPdf = async () => {
+    if (pdfLoading) return;
+    setPdfLoading(true);
     try {
       const blob = await apiBlob(`/invoices/${id}/pdf`);
       if (!blob) return;
@@ -44,7 +47,9 @@ export default function InvoiceDetail() {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
-      alert(err.message);
+      alert(`PDF download failed: ${err.message}`);
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -59,8 +64,8 @@ export default function InvoiceDetail() {
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex items-center justify-between print:hidden">
         <Link to="/invoices" className="text-sm text-emerald-700 hover:underline">← All invoices</Link>
-        <button className={btnGhostCls} onClick={handleDownloadPdf}>
-          ⬇ Download PDF
+        <button className={btnGhostCls} onClick={handleDownloadPdf} disabled={pdfLoading}>
+          {pdfLoading ? 'Generating PDF…' : '⬇ Download PDF'}
         </button>
         <button className={btnGhostCls} onClick={() => window.print()}>🖨 Print</button>
       </div>

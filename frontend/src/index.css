@@ -33,6 +33,20 @@ html, body {
 }
 
 a { text-decoration: none; color: inherit; }
+/* Consistent motion for interactive surfaces. Respects OS accessibility settings. */
+button, a, input, select, textarea {
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease,
+              box-shadow .18s ease, transform .18s ease, opacity .18s ease;
+}
+button:not(:disabled):active { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
 button, input, select, textarea { font: inherit; cursor: pointer; }
 
 /* ── App shell (sidebar + main) ───────────────────────────────────────────── */

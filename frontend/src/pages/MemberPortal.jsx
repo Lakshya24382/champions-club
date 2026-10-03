@@ -78,7 +78,7 @@ function MemberLogin({ onLogin }) {
 
 function MemberDashboard({ member, onLogout }) {
   const memberToken = localStorage.getItem('cc_member_token');
-  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
+  const { data: bookings = [], isLoading: bookingsLoading, error: bookingsError } = useQuery({
     queryKey: ['member-bookings', member.id],
     queryFn: () => api('/member/bookings', { authToken: memberToken }),
     enabled: !!memberToken,
@@ -181,7 +181,11 @@ function MemberDashboard({ member, onLogout }) {
             <h2 style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 15, margin: 0, color: '#0a202b' }}>My court bookings</h2>
             <a href="/book" style={{ fontSize: 12, color: '#6c8c2b', fontWeight: 800 }}>View courts →</a>
           </div>
-          {bookingsLoading ? <p style={{ color: '#718079', fontSize: 12, marginTop: 12 }}>Loading bookings…</p> : bookings.length === 0 ? (
+          {bookingsLoading ? <p style={{ color: '#718079', fontSize: 12, marginTop: 12 }}>Loading bookings…</p> : bookingsError ? (
+            <p style={{ color: '#984848', fontSize: 12, marginTop: 12 }}>
+              {bookingsError.message || 'Unable to load your bookings.'}
+            </p>
+          ) : bookings.length === 0 ? (
             <p style={{ color: '#718079', fontSize: 12, marginTop: 12 }}>No bookings yet.</p>
           ) : (
             <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>

@@ -1,10 +1,23 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../api';
+import { api, apiBlob } from '../api';
 import { Modal, Field, inputCls, btnCls, btnGhostCls, money } from '../components/ui.jsx';
 
 const TABS = [['open', 'Outstanding'], ['overdue', 'Overdue'], ['paid', 'Paid'], ['void', 'Void'], ['all', 'All']];
+
+async function downloadInvoicePdf(invoice) {
+  const blob = await apiBlob(`/invoices/${invoice.id}/pdf`);
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `invoice-${invoice.invoice_no}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export function InvoiceBadge({ i }) {
   const [cls, label] = i.status === 'paid' ? ['bg-emerald-100 text-emerald-800', 'paid']
@@ -220,10 +233,10 @@ export default function Invoices() {
       <div className="overflow-x-auto rounded-xl border bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-100 text-xs uppercase text-slate-500">
-            <tr><th className="p-3">Invoice</th><th className="p-3">Bill to</th><th className="p-3">Issued</th><th className="p-3">Due</th><th className="p-3 text-right">Total</th><th className="p-3 text-right">Balance</th><th className="p-3">Status</th></tr>
+            <tr><th className="p-3">Invoice</th><th className="p-3">Bill to</th><th className="p-3">Issued</th><th className="p-3">Due</th><th className="p-3 text-right">Total</th><th className="p-3 text-right">Balance</th><th className="p-3">Status</th><th className="p-3 text-right">PDF</th></tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td className="p-3" colSpan={7}>Loading…</td></tr>}
+            {isLoading && <tr><td className="p-3" colSpan={8}>Loading…</td></tr>}
             {invoices.map((i) => (
               <tr key={i.id} className="border-t hover:bg-slate-50">
                 <td className="p-3 font-medium"><Link className="text-emerald-700 hover:underline" to={`/invoices/${i.id}`}>{i.invoice_no}</Link>
@@ -234,9 +247,10 @@ export default function Invoices() {
                 <td className="p-3 text-right">{money(i.total)}</td>
                 <td className="p-3 text-right font-semibold">{money(i.balance)}</td>
                 <td className="p-3"><InvoiceBadge i={i} /></td>
+                <td className="p-3 text-right"><button type="button" className="rounded-lg border px-2.5 py-1 text-xs font-medium hover:bg-slate-100" onClick={() => downloadInvoicePdf(i).catch((err) => alert(`PDF download failed: ${err.message}`))}>⬇ PDF</button></td>
               </tr>
             ))}
-            {!isLoading && invoices.length === 0 && <tr><td className="p-3 text-slate-500" colSpan={7}>No invoices here.</td></tr>}
+            {!isLoading && invoices.length === 0 && <tr><td className="p-3 text-slate-500" colSpan={8}>No invoices here.</td></tr>}
           </tbody>
         </table>
       </div>

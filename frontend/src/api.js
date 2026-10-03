@@ -24,8 +24,10 @@ export async function api(path, { method = 'GET', body, authToken } = {}) {
   // Try to parse JSON; fall back to null for empty responses (204, etc.)
   const data = await res.json().catch(() => null);
 
-  // Expired / invalid session — clear token and redirect to login
-  if (res.status === 401 && path !== '/auth/login') {
+  // Only the staff session is managed by AuthProvider. Member-portal requests
+  // pass their token explicitly and must not unexpectedly redirect to /login.
+  // Returning the 401 lets the member portal clear its own session cleanly.
+  if (res.status === 401 && path !== '/auth/login' && !authToken) {
     setToken(null);
     window.location.href = '/login';
     return;
