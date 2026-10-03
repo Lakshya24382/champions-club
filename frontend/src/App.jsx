@@ -10,6 +10,9 @@ import Inventory from './pages/Inventory.jsx';
 import Pos from './pages/Pos.jsx';
 import Orders from './pages/Orders.jsx';
 import Storefront from './pages/Storefront.jsx';
+import Bar from './pages/Bar.jsx';
+import Kitchen from './pages/Kitchen.jsx';
+import BarReports from './pages/BarReports.jsx';
 
 function Protected() {
   const { user, loading } = useAuth();
@@ -20,7 +23,7 @@ function Protected() {
 export default function App() {
   return (
     <Routes>
-      {/* Public: no login needed */}
+      {/* Public */}
       <Route path="/login" element={<Login />} />
       <Route path="/shop" element={<Storefront />} />
 
@@ -33,6 +36,9 @@ export default function App() {
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/pos" element={<Pos />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/bar" element={<Bar />} />
+        <Route path="/kitchen" element={<Kitchen />} />
+        <Route path="/bar-reports" element={<BarReports />} />
       </Route>
     </Routes>
   );

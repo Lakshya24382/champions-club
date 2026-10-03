@@ -15,6 +15,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import catalogRoutes from './routes/catalog.routes.js';
 import productsRoutes from './routes/products.routes.js';
 import ordersRoutes from './routes/orders.routes.js';
+import barRoutes from './routes/bar.routes.js';
 
 const app = express();
 
@@ -24,14 +25,14 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 app.get('/api/health', async (_req, res) => {
-  await query('SELECT 1');           // proves the DB connection works too
+  await query('SELECT 1');
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
 // Public
 app.use('/api/plans', plansRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/catalog', catalogRoutes);      // public storefront
+app.use('/api/catalog', catalogRoutes);
 
 // Staff only (JWT required)
 app.use('/api/members', requireAuth, membersRoutes);
@@ -40,6 +41,7 @@ app.use('/api/bookings', requireAuth, bookingsRoutes);
 app.use('/api/dashboard', requireAuth, dashboardRoutes);
 app.use('/api/products', requireAuth, productsRoutes);
 app.use('/api/orders', requireAuth, ordersRoutes);
+app.use('/api/bar', requireAuth, barRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -10,7 +10,9 @@
     "db:init": "node --env-file=.env scripts/initDb.js",
     "db:seed": "node --env-file=.env scripts/seed.js",
     "db:shop:init": "node --env-file=.env scripts/initShop.js",
-    "db:shop:seed": "node --env-file=.env scripts/seedShop.js"
+    "db:shop:seed": "node --env-file=.env scripts/seedShop.js",
+    "db:bar:init": "node --env-file=.env scripts/initBar.js",
+    "db:bar:seed": "node --env-file=.env scripts/seedBar.js"
   },
   "keywords": [],
   "author": "",

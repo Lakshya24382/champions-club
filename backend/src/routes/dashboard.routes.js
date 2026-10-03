@@ -25,7 +25,13 @@ router.get('/summary', async (_req, res) => {
           AND date_trunc('month', completed_at) = date_trunc('month', now())) AS shop_revenue_month,
       (SELECT count(*)::int FROM orders WHERE status IN ('pending', 'ready')) AS open_online_orders,
       (SELECT count(*)::int FROM products
-        WHERE is_active AND stock_qty <= low_stock_threshold) AS low_stock_items
+        WHERE is_active AND stock_qty <= low_stock_threshold) AS low_stock_items,
+      (SELECT COALESCE(sum(total), 0) FROM bar_orders
+        WHERE status = 'paid' AND paid_at::date = current_date) AS bar_revenue_today,
+      (SELECT COALESCE(sum(total), 0) FROM bar_orders
+        WHERE status = 'paid'
+          AND date_trunc('month', paid_at) = date_trunc('month', now())) AS bar_revenue_month,
+      (SELECT count(*)::int FROM bar_orders WHERE status = 'open') AS open_tabs
   `);
   res.json(s);
 });

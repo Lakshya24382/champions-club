@@ -6,6 +6,7 @@ const link = ({ isActive }) =>
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const manager = ['owner', 'admin'].includes(user.role);
   return (
     <div className="min-h-screen">
       <header className="border-b bg-white">
@@ -17,8 +18,11 @@ export default function Layout() {
               <NavLink to="/members" className={link}>Members</NavLink>
               <NavLink to="/bookings" className={link}>Bookings</NavLink>
               <NavLink to="/inventory" className={link}>Inventory</NavLink>
-              <NavLink to="/pos" className={link}>Point of sale</NavLink>
-              <NavLink to="/orders" className={link}>Orders</NavLink>
+              <NavLink to="/pos" className={link}>Shop POS</NavLink>
+              <NavLink to="/orders" className={link}>Shop orders</NavLink>
+              <NavLink to="/bar" className={link}>Bar</NavLink>
+              <NavLink to="/kitchen" className={link}>Kitchen</NavLink>
+              {manager && <NavLink to="/bar-reports" className={link}>Bar reports</NavLink>}
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">

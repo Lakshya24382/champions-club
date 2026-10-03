@@ -46,6 +46,15 @@ export default function Dashboard() {
       </section>
 
       <section>
+        <h2 className="mb-2 text-sm font-semibold uppercase text-slate-500">Bar & cafeteria</h2>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Card label="Bar revenue today" value={money(s.bar_revenue_today)} to="/bar" />
+          <Card label="Bar revenue (month)" value={money(s.bar_revenue_month)} />
+          <Card label="Open tabs (unpaid)" value={s.open_tabs} to="/bar" tone={s.open_tabs ? 'border-amber-300' : ''} />
+        </div>
+      </section>
+
+      <section>
         <h2 className="mb-2 text-sm font-semibold uppercase text-slate-500">Members</h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Card label="Active members" value={s.active_members} to="/members" />
@@ -54,7 +63,7 @@ export default function Dashboard() {
           <Card label="Total members" value={s.total_members} />
         </div>
       </section>
-      <p className="text-sm text-slate-500">Bar and finance totals join this dashboard in later phases.</p>
+      <p className="text-sm text-slate-500">Finance totals (invoices, payroll, tax) join this dashboard in Phase 5.</p>
     </div>
   );
 }
