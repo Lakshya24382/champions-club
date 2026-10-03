@@ -33,9 +33,10 @@ function NewMemberModal({ onClose }) {
     onSuccess: (m) => {
       qc.invalidateQueries({ queryKey: ['members'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      toast('Member created successfully');
+      toast('Member created successfully ✓');
       navigate(`/members/${m.id}`);
     },
+    onError: (err) => toast(err.message, 'error'),
   });
 
   const plan = plans.find((p) => p.id === Number(f.planId));

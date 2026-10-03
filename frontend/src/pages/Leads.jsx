@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
-import { Modal, Field, inputCls, btnCls, btnGhostCls } from '../components/ui.jsx';
+import { Modal, Field, inputCls, btnCls, btnGhostCls, toast } from '../components/ui.jsx';
 import { LeadStatusBadge, todayStr } from '../components/leadUi.jsx';
 
 const TABS = [
@@ -29,8 +29,12 @@ function NewLeadModal({ onClose }) {
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['leads'] });
       qc.invalidateQueries({ queryKey: ['leads-summary'] });
-      navigate(`/leads/${r.lead.id}`);
+      if (r?.duplicate) toast('Phone number already has an open enquiry — note added to existing lead', 'info');
+      else toast('Enquiry logged successfully ✓');
+      if (r?.lead?.id) navigate(`/leads/${r.lead.id}`);
+      else onClose();
     },
+    onError: (err) => toast(err.message, 'error'),
   });
 
   return (

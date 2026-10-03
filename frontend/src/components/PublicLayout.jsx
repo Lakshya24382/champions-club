@@ -21,6 +21,7 @@ export default function PublicLayout() {
           <nav className="hidden items-center gap-6 md:flex">
             <NavLink to="/" end className={link}>Home</NavLink>
             <NavLink to="/book" className={link}>Book a trial</NavLink>
+            <NavLink to="/member-portal" className={link}>Member login</NavLink>
             <NavLink to="/shop" className={link}>Pro shop</NavLink>
             <Link to="/#contact" className="text-sm font-medium text-slate-600 hover:text-slate-900">
               Contact
@@ -56,6 +57,7 @@ export default function PublicLayout() {
             <nav className="flex flex-col gap-2 text-sm font-medium">
               <NavLink to="/" end className={link} onClick={() => setOpen(false)}>Home</NavLink>
               <NavLink to="/book" className={link} onClick={() => setOpen(false)}>Book a trial</NavLink>
+              <NavLink to="/member-portal" className={link} onClick={() => setOpen(false)}>Member login</NavLink>
               <NavLink to="/shop" className={link} onClick={() => setOpen(false)}>Pro shop</NavLink>
               <Link to="/#contact" className="text-slate-600 hover:text-slate-900" onClick={() => setOpen(false)}>Contact</Link>
               <Link to="/login" className="text-slate-600 hover:text-slate-900" onClick={() => setOpen(false)}>Staff login</Link>

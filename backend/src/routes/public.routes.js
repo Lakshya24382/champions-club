@@ -71,9 +71,12 @@ router.post('/enquiries', writeLimiter, async (req, res) => {
   const d = enquirySchema.parse(req.body);
   if (d.website) return res.status(201).json({ ok: true });   // a bot: pretend success, store nothing
 
-  const { lead, duplicate } = await withTransaction((c) =>
+  const result = await withTransaction((c) =>
     captureLead(c, { ...d, source: 'website' }));
-  notifyStaff('new_enquiry', { id: lead.id, name: lead.name, phone: lead.phone, duplicate });
+  const { lead, duplicate } = result ?? {};
+  if (lead) {
+    notifyStaff('new_enquiry', { id: lead.id, name: lead.name, phone: lead.phone, duplicate }).catch(() => {});
+  }
   res.status(201).json({ ok: true, message: "Thanks! We'll get back to you shortly." });
 });
 

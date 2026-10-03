@@ -38,6 +38,7 @@ export default function Layout() {
       { to: '/expenses',    label: 'Bills',      icon: '◱' },
       { to: '/payroll',     label: 'Payroll',    icon: '♟' },
       { to: '/bar-reports', label: 'Bar Reports',icon: '▥' },
+      { to: '/staff',      label: 'Staff & Users', icon: '⚙' },
     ] : []),
   ];
 

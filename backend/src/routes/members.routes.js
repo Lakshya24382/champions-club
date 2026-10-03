@@ -18,7 +18,7 @@ const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const createSchema = z.object({
   fullName: z.string().trim().min(2),
   phone: z.string().trim().min(7),
-  email: z.email().nullish(),
+  email: z.string().email().nullish(),
   dateOfBirth: dateStr,
   gender: z.enum(['male', 'female', 'other']).nullish(),
   emergencyContact: z.string().trim().nullish(),
@@ -29,7 +29,7 @@ const createSchema = z.object({
 const updateSchema = z.object({
   fullName: z.string().trim().min(2),
   phone: z.string().trim().min(7),
-  email: z.email().nullable(),
+  email: z.string().email().nullable(),
   emergencyContact: z.string().trim().nullable(),
   notes: z.string().trim().nullable(),
   isActive: z.boolean(),

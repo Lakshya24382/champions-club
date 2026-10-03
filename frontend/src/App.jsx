@@ -27,6 +27,8 @@ import Invoices from './pages/Invoices.jsx';
 import InvoiceDetail from './pages/InvoiceDetail.jsx';
 import Expenses from './pages/Expenses.jsx';
 import Payroll from './pages/Payroll.jsx';
+import Staff from './pages/Staff.jsx';
+import MemberPortal from './pages/MemberPortal.jsx';
 
 function Protected() {
   const { user, loading } = useAuth();
@@ -52,6 +54,7 @@ export default function App() {
       </Route>
       <Route path="/shop" element={<Storefront />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/member-portal" element={<MemberPortal />} />
 
       {/* Staff */}
       <Route element={<Protected />}>
@@ -77,6 +80,7 @@ export default function App() {
           <Route path="/invoices/:id" element={<InvoiceDetail />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/payroll" element={<Payroll />} />
+          <Route path="/staff" element={<Staff />} />
         </Route>
       </Route>
     </Routes>

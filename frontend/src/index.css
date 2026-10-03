@@ -791,3 +791,107 @@ button, input, select, textarea { font: inherit; cursor: pointer; }
   .login-card { padding: 28px; }
   .login-hero { margin-top: 50px; }
 }
+
+/* ── Transition effects (FIX 5) ───────────────────────────────────────────── */
+
+/* Page fade-in */
+.page-content > * {
+  animation: page-enter 0.22s ease-out;
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal entrance */
+.fixed.inset-0 > div {
+  animation: modal-enter 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modal-enter {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Slot buttons */
+button.rounded.border {
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.1s ease;
+}
+button.rounded.border:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+button.rounded.border:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Table rows */
+tr.transition-colors { transition: background-color 0.12s ease; }
+
+/* cc-btn transitions */
+.cc-btn {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease !important;
+}
+.cc-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+.cc-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Nav links */
+.nav-link {
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+/* KPI cards */
+.kpi {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(11,32,43,.1);
+}
+
+/* Sidebar tool */
+.sidebar-tool {
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+/* Toast slide-in */
+.cc-alert {
+  animation: toast-enter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Panel (cards) hover */
+.panel {
+  transition: box-shadow 0.18s ease;
+}
+
+/* Input focus transitions */
+.cc-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Status pills */
+.pill {
+  transition: opacity 0.15s ease;
+}
+
+/* Availability slot pulse on social */
+@keyframes soft-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,.3); }
+  50%       { box-shadow: 0 0 0 4px rgba(139,92,246,0); }
+}
+.border-violet-200.bg-violet-50 {
+  animation: soft-pulse 2.5s infinite;
+}
+
+/* Member portal card float */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
-import { Modal, Field, inputCls, btnCls, btnGhostCls, money } from '../components/ui.jsx';
+import { Modal, Field, inputCls, btnCls, btnGhostCls, money, toast } from '../components/ui.jsx';
 import { plusDays } from '../components/leadUi.jsx';
 
 const DAYS = Array.from({ length: 7 }, (_, i) => plusDays(i));
@@ -22,6 +22,7 @@ function TrialModal({ court, slot, date, onClose }) {
       body: { name: f.name, phone: f.phone, email: f.email || null, courtId: court.id, date, time: slot.time, website: f.website },
     }),
     onSuccess: (r) => { setDone(r); qc.invalidateQueries({ queryKey: ['public-availability'] }); },
+    onError: (err) => toast(err.message, 'error'),
   });
 
   if (done) {

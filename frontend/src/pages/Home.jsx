@@ -40,6 +40,7 @@ export default function Home() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/book" className="rounded-lg bg-white px-5 py-3 font-semibold text-emerald-800 hover:bg-emerald-50">See what's free · Book a trial</Link>
             <Link to="/shop" className="rounded-lg border border-emerald-300 px-5 py-3 font-semibold hover:bg-emerald-700">Visit the pro shop</Link>
+            <Link to="/member-portal" className="rounded-lg border border-emerald-200/50 px-5 py-3 font-semibold text-emerald-100 hover:bg-emerald-700/50">Member login →</Link>
           </div>
           <p className="mt-6 text-sm text-emerald-200">Open daily {data.hours.open} – {data.hours.close} · {data.sessionMin}-minute sessions</p>
         </div>

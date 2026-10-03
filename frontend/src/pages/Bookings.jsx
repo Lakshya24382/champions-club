@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
-import { Modal, Field, inputCls, btnCls, btnGhostCls, money } from '../components/ui.jsx';
+import { Modal, Field, inputCls, btnCls, btnGhostCls, money, toast } from '../components/ui.jsx';
 
 const todayStr = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
 
@@ -42,8 +42,10 @@ function BookingModal({ court, slot, date, onClose }) {
       qc.invalidateQueries({ queryKey: ['availability', date] });
       qc.invalidateQueries({ queryKey: ['bookings', date] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+      toast('Court booked successfully! ✓');
       onClose();
     },
+    onError: (err) => toast(err.message, 'error'),
   });
 
   const canSubmit = mode === 'member' ? !!member : guestName.trim().length >= 2;
@@ -112,7 +114,9 @@ export default function Bookings() {
       qc.invalidateQueries({ queryKey: ['availability', date] });
       qc.invalidateQueries({ queryKey: ['bookings', date] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+      toast('Booking cancelled');
     },
+    onError: (err) => toast(err.message, 'error'),
   });
 
   return (

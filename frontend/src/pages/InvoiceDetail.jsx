@@ -30,6 +30,30 @@ export default function InvoiceDetail() {
     onSuccess: refresh,
   });
 
+
+  const handleDownloadPdf = () => {
+    // Build a self-contained print page that auto-downloads as PDF
+    const invoiceEl = document.getElementById('invoice-print-area');
+    if (!invoiceEl) { window.print(); return; }
+    const html = invoiceEl.outerHTML;
+    const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Invoice ${inv.invoice_no}</title>
+      <style>
+        body{font-family:Arial,sans-serif;color:#162620;margin:0;padding:32px}
+        table{width:100%;border-collapse:collapse}
+        th,td{padding:8px;text-align:left;border-bottom:1px solid #dfe6e2}
+        th{font-size:11px;text-transform:uppercase;color:#718079}
+        .total-row{font-weight:700;font-size:18px}
+        h1{color:#059669;font-size:18px}
+        @media print{@page{size:A4;margin:20mm}}
+      </style>
+    </head><body>${html}</body></html>`], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `invoice-${inv.invoice_no}.html`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
   if (isLoading) return <p>Loading…</p>;
   if (error) return <p className="text-red-600">{error.message}</p>;
 
@@ -41,10 +65,13 @@ export default function InvoiceDetail() {
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex items-center justify-between print:hidden">
         <Link to="/invoices" className="text-sm text-emerald-700 hover:underline">← All invoices</Link>
-        <button className={btnGhostCls} onClick={() => window.print()}>Print / save as PDF</button>
+        <button className={btnGhostCls} onClick={handleDownloadPdf}>
+          ⬇ Download PDF
+        </button>
+        <button className={btnGhostCls} onClick={() => window.print()}>🖨 Print</button>
       </div>
 
-      <div className="rounded-xl border bg-white p-8 print:border-0 print:p-0">
+      <div id="invoice-print-area" className="rounded-xl border bg-white p-8 print:border-0 print:p-0">
         <div className="flex flex-wrap justify-between gap-4">
           <div>
             <p className="text-xl font-bold text-emerald-700">{inv.club.name}</p>
