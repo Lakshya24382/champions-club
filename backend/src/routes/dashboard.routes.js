@@ -17,7 +17,15 @@ router.get('/summary', async (_req, res) => {
         WHERE status = 'confirmed' AND start_at::date = current_date) AS court_revenue_today,
       (SELECT COALESCE(sum(price), 0) FROM bookings
         WHERE status = 'confirmed'
-          AND date_trunc('month', start_at) = date_trunc('month', now())) AS court_revenue_month
+          AND date_trunc('month', start_at) = date_trunc('month', now())) AS court_revenue_month,
+      (SELECT COALESCE(sum(total), 0) FROM orders
+        WHERE status = 'completed' AND completed_at::date = current_date) AS shop_revenue_today,
+      (SELECT COALESCE(sum(total), 0) FROM orders
+        WHERE status = 'completed'
+          AND date_trunc('month', completed_at) = date_trunc('month', now())) AS shop_revenue_month,
+      (SELECT count(*)::int FROM orders WHERE status IN ('pending', 'ready')) AS open_online_orders,
+      (SELECT count(*)::int FROM products
+        WHERE is_active AND stock_qty <= low_stock_threshold) AS low_stock_items
   `);
   res.json(s);
 });

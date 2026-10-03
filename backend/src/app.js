@@ -12,6 +12,9 @@ import membersRoutes from './routes/members.routes.js';
 import courtsRoutes from './routes/courts.routes.js';
 import bookingsRoutes from './routes/bookings.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import catalogRoutes from './routes/catalog.routes.js';
+import productsRoutes from './routes/products.routes.js';
+import ordersRoutes from './routes/orders.routes.js';
 
 const app = express();
 
@@ -28,12 +31,15 @@ app.get('/api/health', async (_req, res) => {
 // Public
 app.use('/api/plans', plansRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/catalog', catalogRoutes);      // public storefront
 
 // Staff only (JWT required)
 app.use('/api/members', requireAuth, membersRoutes);
 app.use('/api/courts', requireAuth, courtsRoutes);
 app.use('/api/bookings', requireAuth, bookingsRoutes);
 app.use('/api/dashboard', requireAuth, dashboardRoutes);
+app.use('/api/products', requireAuth, productsRoutes);
+app.use('/api/orders', requireAuth, ordersRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
