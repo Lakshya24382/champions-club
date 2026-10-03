@@ -15,6 +15,18 @@ const bookingSchema = z.object({
 
 router.use(requireRole('member'));
 
+router.get('/profile', async (req, res) => {
+  const { rows: [member] } = await query(
+    `SELECT m.id, m.member_code, m.full_name, m.phone, m.email, m.expires_on, m.is_active,
+            p.name AS plan_name, p.code AS plan_code,
+            p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct
+       FROM members m JOIN membership_plans p ON p.id = m.plan_id WHERE m.id = $1`,
+    [req.user.sub],
+  );
+  if (!member) throw new HttpError(404, 'Member account not found');
+  res.json(member);
+});
+
 router.get('/availability', async (req, res) => {
   const date = dateStr.parse(req.query.date);
   res.json(await getAvailability(date));

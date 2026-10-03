@@ -11,66 +11,37 @@ const MemberAuthContext = createContext(null);
 export const useMemberAuth = () => useContext(MemberAuthContext);
 
 function MemberLogin({ onLogin }) {
-  const [code, setCode] = useState('');
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const submit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+    e.preventDefault(); setError(''); setLoading(true);
     try {
-      const r = await api('/auth/member-login', {
-        method: 'POST',
-        body: { memberCode: code.trim().toUpperCase(), phone: phone.trim() },
-      });
+      const r = await api('/auth/member-login', { method: 'POST', body: { identifier: identifier.trim(), password } });
       localStorage.setItem('cc_member_token', r.token);
       onLogin(r.member);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   };
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a202b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 400, background: '#fff', borderRadius: 20, padding: 40, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-          <div className="brand-mark" style={{ width: 44, height: 44 }}>CC</div>
-          <div>
-            <div style={{ fontFamily: 'Manrope', fontWeight: 800, fontSize: 15 }}>CHAMPIONS CLUB</div>
-            <div style={{ fontSize: 10, color: '#718079', letterSpacing: 1 }}>MEMBER PORTAL</div>
-          </div>
-        </div>
-
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}><div className="brand-mark" style={{ width: 44, height: 44 }}>CC</div><div><div style={{ fontFamily: 'Manrope', fontWeight: 800, fontSize: 15 }}>CHAMPIONS CLUB</div><div style={{ fontSize: 10, color: '#718079', letterSpacing: 1 }}>MEMBER PORTAL</div></div></div>
         <h2 style={{ fontFamily: 'Manrope', fontSize: 26, fontWeight: 800, margin: '0 0 4px' }}>Member sign-in</h2>
-        <p style={{ fontSize: 12, color: '#77847e', margin: '0 0 24px' }}>Use your membership code and registered phone number</p>
-
+        <p style={{ fontSize: 12, color: '#77847e', margin: '0 0 24px' }}>Sign in with the email address or phone number and password on your account.</p>
         <form onSubmit={submit}>
-          <label className="login-field-label">Membership code</label>
-          <input className="login-input" value={code} onChange={(e) => setCode(e.target.value)}
-            placeholder="CC-00001" required style={{ textTransform: 'uppercase' }} />
-
-          <label className="login-field-label">Phone number</label>
-          <input className="login-input" value={phone} onChange={(e) => setPhone(e.target.value)}
-            placeholder="9800000000" required />
-
-          {error && <div className="login-error">{error}</div>}
-
-          <button type="submit" className="login-submit" disabled={loading}>
-            {loading ? 'Checking…' : 'Access My Account'}
-            <span className="login-submit-arrow">→</span>
-          </button>
+          <label className="login-field-label">Email or phone number</label>
+          <input className="login-input" value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" required placeholder="you@example.com or phone" />
+          <label className="login-field-label">Password</label>
+          <input className="login-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+          {error && <div role="alert" className="login-error">{error}</div>}
+          <button type="submit" className="login-submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}<span className="login-submit-arrow">→</span></button>
         </form>
-
-        <p style={{ fontSize: 10, color: '#9aada6', textAlign: 'center', marginTop: 16 }}>
-          Your member code is on your membership card or welcome email.
-        </p>
-        <a href="/" style={{ display: 'block', textAlign: 'center', marginTop: 12, fontSize: 10, color: '#6c8c2b', fontWeight: 800 }}>
-          ← Back to website
-        </a>
+        <p style={{ textAlign: 'center', fontSize: 12, marginTop: 18, color: '#718079' }}>New to Champions Club? <a href="/member-signup" style={{ color: '#6c8c2b', fontWeight: 800 }}>Create an account</a></p>
+        <a href="/" style={{ display: 'block', textAlign: 'center', marginTop: 12, fontSize: 10, color: '#6c8c2b', fontWeight: 800 }}>← Back to website</a>
       </div>
     </div>
   );
@@ -84,7 +55,12 @@ function MemberDashboard({ member, onLogout }) {
     enabled: !!memberToken,
   });
 
-  const info = member || {};
+  const { data: profile } = useQuery({
+    queryKey: ['member-profile', member.id],
+    queryFn: () => api('/member/profile', { authToken: memberToken }),
+    enabled: !!memberToken,
+  });
+  const info = profile || member || {};
   // API/JWT payloads can omit profile fields; keep the dashboard render-safe.
   const fullName = String(info.full_name ?? info.name ?? 'Member').trim() || 'Member';
   const firstName = fullName.split(/\s+/)[0];
@@ -241,7 +217,7 @@ export default function MemberPortal() {
       // Decode payload
       const payload = JSON.parse(atob(token.split('.')[1]));
       if (payload.exp * 1000 < Date.now()) { localStorage.removeItem('cc_member_token'); return null; }
-      return payload;
+      return { ...payload, id: payload.sub, full_name: payload.name, member_code: payload.memberCode }; 
     } catch { return null; }
   });
 

@@ -9,6 +9,7 @@ import { getAvailability, createBooking, cancelBooking } from '../services/booki
 import { captureLead, normPhone, normEmail, publicQuote } from '../services/lead.service.js';
 import { notifyStaff } from '../utils/notify.js';
 import { ageOn } from '../utils/dates.js';
+import { hashPassword } from '../utils/password.js';
 
 // PUBLIC routes: no login. Never expose names, member data or exact stock.
 const router = Router();
@@ -61,6 +62,7 @@ const signupSchema = z.object({
   gender: z.enum(['male', 'female', 'other']).optional().or(z.literal('')),
   emergencyContact: z.string().trim().max(120).optional(),
   planId: z.number().int().positive(),
+  password: z.string().min(8).max(128),
 });
 
 router.post('/member-signup', writeLimiter, async (req, res) => {
@@ -68,6 +70,8 @@ router.post('/member-signup', writeLimiter, async (req, res) => {
   if (d.dateOfBirth > new Date().toISOString().slice(0, 10)) throw new HttpError(400, 'Date of birth cannot be in the future');
   const phone = normPhone(d.phone);
   const email = d.email ? normEmail(d.email) : null;
+  if (!email) throw new HttpError(400, 'Email is required to create your account');
+  const passwordHash = await hashPassword(d.password);
   const member = await withTransaction(async (c) => {
     const { rows: [plan] } = await c.query(
       'SELECT * FROM membership_plans WHERE id = $1 AND is_active', [d.planId]);
@@ -80,16 +84,16 @@ router.post('/member-signup', writeLimiter, async (req, res) => {
       [phone, email]);
     if (existing) throw new HttpError(409, 'A membership already exists with this phone number or email');
     const { rows: [created] } = await c.query(
-      `INSERT INTO members (full_name, phone, email, date_of_birth, gender, emergency_contact, plan_id, expires_on)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,current_date + $8::int) RETURNING id, member_code, full_name, phone, email, expires_on`,
-      [d.fullName, phone, email, d.dateOfBirth, d.gender || null, d.emergencyContact || null, plan.id, plan.duration_days]);
+      `INSERT INTO members (full_name, phone, email, date_of_birth, gender, emergency_contact, plan_id, expires_on, password_hash)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,current_date + $8::int,$9) RETURNING id, member_code, full_name, phone, email, expires_on`,
+      [d.fullName, phone, email, d.dateOfBirth, d.gender || null, d.emergencyContact || null, plan.id, plan.duration_days, passwordHash]);
     await c.query(
       `INSERT INTO membership_events (member_id, plan_id, event_type, starts_on, ends_on, amount, created_by)
        VALUES ($1,$2,'joined',current_date,$3,$4,NULL)`,
       [created.id, plan.id, created.expires_on, plan.price]);
     return { ...created, plan_name: plan.name };
   });
-  res.status(201).json({ ok: true, member, message: 'Registration successful. Save your member code for portal access.' });
+  res.status(201).json({ ok: true, member, message: 'Registration successful. You can now sign in with your email and password.' });
 });
 
 // ---- "what is free this week": slot states only

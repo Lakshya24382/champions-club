@@ -37,29 +37,53 @@ router.post('/login', async (req, res) => {
   res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
 });
 
-// FIX 7: Member login — members log in with member_code + phone (no password)
-// Returns a limited-scope token for the member portal
+// Member login: self-registered members use email or phone + password.
+// Legacy member-code + phone login remains available for existing accounts without a password.
 router.post('/member-login', memberLoginLimiter, async (req, res) => {
   const d = z.object({
-    memberCode: z.string().trim().min(3),
-    phone: z.string().trim().min(7),
+    identifier: z.string().trim().min(3).optional(),
+    email: z.string().trim().optional(),
+    phone: z.string().trim().optional(),
+    password: z.string().min(1).optional(),
+    memberCode: z.string().trim().min(3).optional(),
   }).parse(req.body);
 
-  const { rows: [member] } = await query(
-    `SELECT m.id, m.member_code, m.full_name, m.phone, m.email, m.expires_on, m.is_active,
-            p.name AS plan_name, p.code AS plan_code,
-            p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct
-       FROM members m JOIN membership_plans p ON p.id = m.plan_id
-      WHERE upper(m.member_code) = upper($1)
-        AND regexp_replace(m.phone, '[^\\d+]', '', 'g') = regexp_replace($2, '[^\\d+]', '', 'g')`,
-    [d.memberCode, d.phone],
-  );
-  if (!member) throw new HttpError(401, 'Member code and phone number do not match');
-  if (!member.is_active) throw new HttpError(403, 'This membership is inactive. Please contact the front desk.');
+  let member;
+  if (d.password && (d.identifier || d.email || d.phone)) {
+    const identifier = (d.identifier || d.email || d.phone).trim();
+    const isEmail = identifier.includes('@');
+    const { rows: [account] } = await query(
+      `SELECT m.*, p.name AS plan_name, p.code AS plan_code,
+              p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct
+         FROM members m JOIN membership_plans p ON p.id = m.plan_id
+        WHERE ($2::boolean AND lower(m.email) = lower($1))
+           OR (NOT $2::boolean AND regexp_replace(m.phone, '[^\\d+]', '', 'g') = regexp_replace($1, '[^\\d+]', '', 'g'))`,
+      [identifier, isEmail],
+    );
+    if (!account || !account.password_hash || !(await verifyPassword(d.password, account.password_hash))) {
+      throw new HttpError(401, 'Email/phone or password is incorrect');
+    }
+    member = account;
+  } else if (d.memberCode && d.phone) {
+    const { rows: [legacy] } = await query(
+      `SELECT m.*, p.name AS plan_name, p.code AS plan_code,
+              p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct
+         FROM members m JOIN membership_plans p ON p.id = m.plan_id
+        WHERE upper(m.member_code) = upper($1)
+          AND regexp_replace(m.phone, '[^\\d+]', '', 'g') = regexp_replace($2, '[^\\d+]', '', 'g')`,
+      [d.memberCode, d.phone],
+    );
+    if (!legacy) throw new HttpError(401, 'Member code and phone number do not match');
+    member = legacy;
+  } else {
+    throw new HttpError(400, 'Enter your email/phone and password');
+  }
 
+  if (!member.is_active) throw new HttpError(403, 'This membership is inactive. Please contact the front desk.');
   const payload = { sub: member.id, name: member.full_name, role: 'member', memberCode: member.member_code };
   const token = jwt.sign(payload, config.jwtSecret, { expiresIn: '24h' });
-  res.json({ token, member: { ...member, token } });
+  const { password_hash, ...safeMember } = member;
+  res.json({ token, member: { ...safeMember, token } });
 });
 
 router.get('/me', requireAuth, (req, res) => {

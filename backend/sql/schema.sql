@@ -47,6 +47,7 @@ CREATE TABLE members (
   joined_on         DATE NOT NULL DEFAULT current_date,
   expires_on        DATE NOT NULL,
   is_active         BOOLEAN NOT NULL DEFAULT TRUE,
+  password_hash     TEXT,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_members_expires ON members (expires_on);
