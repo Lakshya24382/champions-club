@@ -61,7 +61,7 @@ router.get('/availability', async (req, res) => {
 const enquirySchema = z.object({
   name: z.string().trim().min(2).max(100),
   phone: phoneStr,
-  email: z.email().nullish(),
+  email: z.string().email().nullish(),
   message: z.string().trim().max(1000).nullish(),
   interestedPlanId: z.number().int().positive().nullish(),
   website: z.string().optional(),       // honeypot: real people never fill this in
@@ -84,7 +84,7 @@ router.post('/enquiries', writeLimiter, async (req, res) => {
 const trialSchema = z.object({
   name: z.string().trim().min(2).max(100),
   phone: phoneStr,
-  email: z.email().nullish(),
+  email: z.string().email().nullish(),
   courtId: z.number().int().positive(),
   date: dateStr,
   time: z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, 'Start time must be on the hour or half hour'),

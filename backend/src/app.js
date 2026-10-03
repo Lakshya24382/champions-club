@@ -23,9 +23,11 @@ import invoicesRoutes from './routes/invoices.routes.js';
 import expensesRoutes from './routes/expenses.routes.js';
 import hrRoutes from './routes/hr.routes.js';
 import sharedReportRoutes from './routes/sharedReport.routes.js';
+import memberRoutes from './routes/member.routes.js';
 
 const app = express();
 const managers = requireRole('owner', 'admin');
+const staffOnly = requireRole('owner', 'admin', 'staff');
 
 // Security & parsing
 app.use(helmet());
@@ -63,17 +65,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/catalog', catalogRoutes);
 app.use('/api/public/report', sharedReportRoutes); // frozen, shared owner reports
 app.use('/api/public', publicRoutes);
+app.use('/api/member', requireAuth, memberRoutes);
 
 // ── Staff routes (JWT required) ────────────────────────────────────────────────
-app.use('/api/members',  requireAuth, membersRoutes);
-app.use('/api/courts',   requireAuth, courtsRoutes);
-app.use('/api/bookings', requireAuth, bookingsRoutes);
-app.use('/api/dashboard',requireAuth, dashboardRoutes);
-app.use('/api/products', requireAuth, productsRoutes);
-app.use('/api/orders',   requireAuth, ordersRoutes);
-app.use('/api/bar',      requireAuth, barRoutes);
-app.use('/api/leads',    requireAuth, leadsRoutes);
-app.use('/api/hr',       requireAuth, hrRoutes);
+app.use('/api/members',  requireAuth, staffOnly, membersRoutes);
+app.use('/api/courts',   requireAuth, staffOnly, courtsRoutes);
+app.use('/api/bookings', requireAuth, staffOnly, bookingsRoutes);
+app.use('/api/dashboard',requireAuth, staffOnly, dashboardRoutes);
+app.use('/api/products', requireAuth, staffOnly, productsRoutes);
+app.use('/api/orders',   requireAuth, staffOnly, ordersRoutes);
+app.use('/api/bar',      requireAuth, staffOnly, barRoutes);
+app.use('/api/leads',    requireAuth, staffOnly, leadsRoutes);
+app.use('/api/hr',       requireAuth, staffOnly, hrRoutes);
 
 // ── Owner / admin only ─────────────────────────────────────────────────────────
 app.use('/api/finance',  requireAuth, managers, financeRoutes);

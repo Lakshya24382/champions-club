@@ -16,7 +16,8 @@
     "db:crm:init": "node --env-file=.env scripts/initCrm.js",
     "db:crm:seed": "node --env-file=.env scripts/seedCrm.js",
     "db:fin:init": "node --env-file=.env scripts/initFinance.js",
-    "db:fin:seed": "node --env-file=.env scripts/seedFinance.js"
+    "db:fin:seed": "node --env-file=.env scripts/seedFinance.js",
+    "db:setup": "node scripts/setup.js"
   },
   "keywords": [],
   "author": "",

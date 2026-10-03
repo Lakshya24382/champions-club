@@ -83,6 +83,24 @@ export async function createBooking(input, userId) {
       'SELECT * FROM courts WHERE id = $1 AND is_active FOR UPDATE', [courtId]);
     if (!court) throw new HttpError(404, 'Court not found');
 
+    // 2) Validate the selected member and daily booking allowance.
+    if (memberId != null) {
+      const { rows: [member] } = await c.query(
+        `SELECT id, is_active, expires_on FROM members WHERE id = $1 FOR SHARE`, [memberId]);
+      if (!member) throw new HttpError(404, 'Member not found');
+      if (!member.is_active || member.expires_on < new Date().toISOString().slice(0, 10)) {
+        throw new HttpError(409, 'This membership is inactive or expired');
+      }
+      const { rows: [{ n }] } = await c.query(
+        `SELECT count(*)::int AS n FROM bookings
+          WHERE member_id = $1 AND status = 'confirmed'
+            AND start_at >= $2::date::timestamptz
+            AND start_at < ($2::date + 1)::timestamptz`, [memberId, date]);
+      if (Number(n) >= rules.maxBookingsPerDay) {
+        throw new HttpError(409, `A member can have at most ${rules.maxBookingsPerDay} confirmed bookings per day`);
+      }
+    }
+
     // 2) Build the exact time window (in the club's timezone)
     const { rows: [w] } = await c.query(
       `SELECT t.start_at,

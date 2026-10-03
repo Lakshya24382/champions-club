@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- WARNING: resets ONLY the finance/HR tables (Phases 1-4 data is not touched).
 -- It also adds payment columns to bookings and membership_events (safe to re-run).
 -- If you ever re-run the Phase 1 "db:init", re-run Phase 4's and this one afterwards.

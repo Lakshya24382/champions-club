@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { parseId } from '../utils/httpError.js';
 import { paymentMethod } from '../utils/schemas.js';
 import * as inv from '../services/invoice.service.js';
+import { invoiceToPdf } from '../services/pdf.service.js';
 
 // Mounted behind requireAuth + owner/admin only.
 const router = Router();
@@ -55,6 +56,13 @@ router.post('/membership', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => res.json(await inv.getInvoice(parseId(req.params.id))));
+
+router.get('/:id/pdf', async (req, res) => {
+  const invoice = await inv.getInvoice(parseId(req.params.id));
+  const pdf = invoiceToPdf(invoice);
+  res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename=invoice-${invoice.invoice_no}.pdf`, 'Content-Length': pdf.length });
+  res.send(pdf);
+});
 
 router.post('/:id/payments', async (req, res) => {
   const d = z.object({

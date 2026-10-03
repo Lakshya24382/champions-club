@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- WARNING: resets ONLY the CRM tables (Phases 1-3 data is not touched).
 -- If you ever re-run the Phase 1 "db:init", re-run this one too (it references members and bookings).
 DROP TABLE IF EXISTS lead_activities, quotes, leads CASCADE;

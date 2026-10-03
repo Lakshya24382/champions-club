@@ -15,9 +15,10 @@ const loginSchema = z.object({ email: z.string().email(), password: z.string().m
 // Staff login
 router.post('/login', async (req, res) => {
   const { email, password } = loginSchema.parse(req.body);
+  const normalizedEmail = email.trim().toLowerCase();
   const { rows: [user] } = await query(
     'SELECT * FROM users WHERE email = $1 AND is_active',
-    [email.toLowerCase()],
+    [normalizedEmail],
   );
   if (!user || !(await verifyPassword(password, user.password_hash))) {
     throw new HttpError(401, 'Wrong email or password');
@@ -74,11 +75,12 @@ router.get('/users', requireAuth, requireRole('owner', 'admin'), async (_req, re
 router.post('/users', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
   const d = userSchema.parse(req.body);
   const hash = await hashPassword(d.password);
+  const normalizedEmail = d.email.trim().toLowerCase();
   const { rows: [user] } = await query(
     `INSERT INTO users (name, email, password_hash, role)
      VALUES ($1, $2, $3, $4)
      RETURNING id, name, email, role, is_active, created_at`,
-    [d.name, d.email.toLowerCase(), hash, d.role],
+    [d.name, normalizedEmail, hash, d.role],
   );
   res.status(201).json(user);
 });

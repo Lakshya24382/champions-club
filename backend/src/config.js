@@ -1,8 +1,10 @@
-if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is missing in .env');
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET is missing in .env');
+}
 
 export const config = {
   port: Number(process.env.PORT) || 4000,
-  jwtSecret: process.env.JWT_SECRET,
+  jwtSecret: process.env.JWT_SECRET || 'dev-only-change-this-secret',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   tz: process.env.CLUB_TZ || 'Asia/Kolkata',
   db: {

@@ -77,10 +77,11 @@ function MemberLogin({ onLogin }) {
 }
 
 function MemberDashboard({ member, onLogout }) {
-  const { data: profile } = useQuery({
-    queryKey: ['member-profile', member.id],
-    queryFn: () => api(`/public/member-profile?code=${member.member_code}&phone=${encodeURIComponent(member.phone)}`),
-    enabled: false, // profile data already in member object
+  const memberToken = localStorage.getItem('cc_member_token');
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
+    queryKey: ['member-bookings', member.id],
+    queryFn: () => api('/member/bookings', { authToken: memberToken }),
+    enabled: !!memberToken,
   });
 
   const info = member;
@@ -172,6 +173,26 @@ function MemberDashboard({ member, onLogout }) {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Upcoming bookings */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: 24, marginBottom: 20, border: '1px solid #dfe6e2' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <h2 style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 15, margin: 0, color: '#0a202b' }}>My court bookings</h2>
+            <a href="/book" style={{ fontSize: 12, color: '#6c8c2b', fontWeight: 800 }}>View courts →</a>
+          </div>
+          {bookingsLoading ? <p style={{ color: '#718079', fontSize: 12, marginTop: 12 }}>Loading bookings…</p> : bookings.length === 0 ? (
+            <p style={{ color: '#718079', fontSize: 12, marginTop: 12 }}>No bookings yet.</p>
+          ) : (
+            <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
+              {bookings.filter((b) => b.status === 'confirmed').slice(0, 5).map((b) => (
+                <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: 12, borderRadius: 10, background: '#f4f6f3', fontSize: 12 }}>
+                  <span><b>{b.court_name}</b> · {b.start_at}–{b.end_time}</span>
+                  <b>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(b.price ?? 0)}</b>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick links */}

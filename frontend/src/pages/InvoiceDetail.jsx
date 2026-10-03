@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../api';
+import { api, apiBlob } from '../api';
 import { Field, inputCls, btnCls, btnGhostCls, money } from '../components/ui.jsx';
 import { InvoiceBadge } from './Invoices.jsx';
 
@@ -31,27 +31,21 @@ export default function InvoiceDetail() {
   });
 
 
-  const handleDownloadPdf = () => {
-    // Build a self-contained print page that auto-downloads as PDF
-    const invoiceEl = document.getElementById('invoice-print-area');
-    if (!invoiceEl) { window.print(); return; }
-    const html = invoiceEl.outerHTML;
-    const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>Invoice ${inv.invoice_no}</title>
-      <style>
-        body{font-family:Arial,sans-serif;color:#162620;margin:0;padding:32px}
-        table{width:100%;border-collapse:collapse}
-        th,td{padding:8px;text-align:left;border-bottom:1px solid #dfe6e2}
-        th{font-size:11px;text-transform:uppercase;color:#718079}
-        .total-row{font-weight:700;font-size:18px}
-        h1{color:#059669;font-size:18px}
-        @media print{@page{size:A4;margin:20mm}}
-      </style>
-    </head><body>${html}</body></html>`], {type:'text/html'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `invoice-${inv.invoice_no}.html`;
-    a.click(); URL.revokeObjectURL(url);
+  const handleDownloadPdf = async () => {
+    try {
+      const blob = await apiBlob(`/invoices/${id}/pdf`);
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${inv.invoice_no}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   if (isLoading) return <p>Loading…</p>;
