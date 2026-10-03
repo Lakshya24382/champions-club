@@ -14,7 +14,9 @@
     "db:bar:init": "node --env-file=.env scripts/initBar.js",
     "db:bar:seed": "node --env-file=.env scripts/seedBar.js",
     "db:crm:init": "node --env-file=.env scripts/initCrm.js",
-    "db:crm:seed": "node --env-file=.env scripts/seedCrm.js"
+    "db:crm:seed": "node --env-file=.env scripts/seedCrm.js",
+    "db:fin:init": "node --env-file=.env scripts/initFinance.js",
+    "db:fin:seed": "node --env-file=.env scripts/seedFinance.js"
   },
   "keywords": [],
   "author": "",

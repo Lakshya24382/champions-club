@@ -5,12 +5,13 @@ import { useAuth } from '../auth.jsx';
 
 const link = ({ isActive }) =>
   `rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-emerald-600 text-white' : 'text-slate-700 hover:bg-slate-200'}`;
+const link2 = ({ isActive }) =>
+  `rounded-lg px-3 py-1.5 text-xs font-medium ${isActive ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-200'}`;
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const manager = ['owner', 'admin'].includes(user.role);
 
-  // New / overdue enquiries show as a badge, refreshed every 30 seconds.
   const { data: ls } = useQuery({
     queryKey: ['leads-summary'],
     queryFn: () => api('/leads/summary'),
@@ -39,7 +40,7 @@ export default function Layout() {
               <NavLink to="/orders" className={link}>Shop orders</NavLink>
               <NavLink to="/bar" className={link}>Bar</NavLink>
               <NavLink to="/kitchen" className={link}>Kitchen</NavLink>
-              {manager && <NavLink to="/bar-reports" className={link}>Bar reports</NavLink>}
+              <NavLink to="/leave" className={link}>Leave</NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
@@ -48,6 +49,19 @@ export default function Layout() {
             <button onClick={logout} className="text-slate-500 hover:text-slate-900">Log out</button>
           </div>
         </div>
+        {manager && (
+          <div className="border-t bg-slate-50">
+            <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-1 px-4 py-1.5">
+              <span className="mr-2 text-xs font-semibold uppercase text-slate-400">Back office</span>
+              <NavLink to="/finance" className={link2}>Finance</NavLink>
+              <NavLink to="/collections" className={link2}>Collections</NavLink>
+              <NavLink to="/invoices" className={link2}>Invoices</NavLink>
+              <NavLink to="/expenses" className={link2}>Bills</NavLink>
+              <NavLink to="/payroll" className={link2}>Payroll</NavLink>
+              <NavLink to="/bar-reports" className={link2}>Bar reports</NavLink>
+            </nav>
+          </div>
+        )}
       </header>
       <main className="mx-auto max-w-6xl p-4"><Outlet /></main>
     </div>
