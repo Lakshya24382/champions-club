@@ -131,7 +131,7 @@ function MemberDashboard({ member, onLogout }) {
           </div>
         )}
 
-        {/* Membership card */
+        {/* Membership card */}
         <div style={{ background: 'linear-gradient(135deg, #0a202b 0%, #1c4032 100%)', borderRadius: 20, padding: 28, color: '#fff', marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', right: -20, top: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(184,223,85,.08)' }} />
           <div style={{ position: 'absolute', right: 30, top: 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(184,223,85,.06)' }} />
