@@ -1,11 +1,11 @@
 /**
  * FIX 7: Member Login Portal
- * Members log in with their member code + phone number (no password needed).
- * Shows their profile, active bookings, discount summary.
+ * Members create their own account and sign in with email/phone + password.
+ * Shows their profile, active bookings, and membership benefits.
  */
 import { useState, createContext, useContext } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { api, setToken, getToken } from '../api';
+import { api } from '../api';
 
 const MemberAuthContext = createContext(null);
 export const useMemberAuth = () => useContext(MemberAuthContext);
@@ -80,12 +80,13 @@ function MemberDashboard({ member, onLogout }) {
     enabled: !!memberToken,
   });
 
-  const { data: profile } = useQuery({
+  const { data: profile, error: profileError } = useQuery({
     queryKey: ['member-profile', member.id],
     queryFn: () => api('/member/profile', { authToken: memberToken }),
     enabled: !!memberToken,
   });
   const info = profile || member || {};
+  const profileNeedsLogin = profileError?.status === 401;
   // API/JWT payloads can omit profile fields; keep the dashboard render-safe.
   const fullName = String(info.full_name ?? info.name ?? 'Member').trim() || 'Member';
   const firstName = fullName.split(/\s+/)[0];
@@ -122,7 +123,15 @@ function MemberDashboard({ member, onLogout }) {
           </p>
         </div>
 
-        {/* Membership card */}
+
+        {profileNeedsLogin && (
+          <div role="alert" style={{ background: '#fae5e5', border: '1px solid #f9c9c9', borderRadius: 12, padding: 16, marginBottom: 20, color: '#984848' }}>
+            <b>Your member session has expired.</b> Please sign in again.
+            <button type="button" onClick={onLogout} style={{ marginLeft: 10, border: 0, background: '#984848', color: '#fff', borderRadius: 7, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}>Sign in</button>
+          </div>
+        )}
+
+        {/* Membership card */
         <div style={{ background: 'linear-gradient(135deg, #0a202b 0%, #1c4032 100%)', borderRadius: 20, padding: 28, color: '#fff', marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', right: -20, top: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(184,223,85,.08)' }} />
           <div style={{ position: 'absolute', right: 30, top: 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(184,223,85,.06)' }} />
@@ -255,7 +264,11 @@ export default function MemberPortal() {
       const token = localStorage.getItem('cc_member_token');
       if (!token) return null;
       // Decode payload
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const part = token.split('.')[1];
+      if (!part) throw new Error('Invalid member session');
+      const base64 = part.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - part.length % 4) % 4);
+      const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const payload = JSON.parse(new TextDecoder().decode(bytes));
       if (payload.exp * 1000 < Date.now()) { localStorage.removeItem('cc_member_token'); return null; }
       return { ...payload, id: payload.sub, full_name: payload.name, member_code: payload.memberCode }; 
     } catch { return null; }

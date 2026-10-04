@@ -35,7 +35,10 @@ export async function api(path, { method = 'GET', body, authToken } = {}) {
 
   if (!res.ok) {
     const details = data?.details?.map((d) => `${d.field}: ${d.message}`).join(', ');
-    throw new Error(details || data?.error || `Request failed (${res.status})`);
+    const error = new Error(details || data?.error || `Request failed (${res.status})`);
+    error.status = res.status;
+    error.details = data?.details;
+    throw error;
   }
 
   return data;

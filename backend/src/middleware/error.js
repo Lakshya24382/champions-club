@@ -41,13 +41,20 @@ export function errorHandler(err, req, res, _next) {
       : res.status(400).json({ error: 'That value is not allowed here' });
   }
 
-  // Unexpected error — log with context for debugging
+  // Unexpected error — log safe request context only. Never log passwords,
+  // payment credentials, or other secrets from request bodies.
+  const safeBody = req.body && typeof req.body === 'object'
+    ? Object.fromEntries(Object.entries(req.body).map(([key, value]) => {
+        const sensitive = /password|secret|token|signature/i.test(key);
+        return [key, sensitive ? '[REDACTED]' : value];
+      }))
+    : undefined;
   console.error({
     message: err.message,
     stack: err.stack,
     method: req.method,
     path: req.path,
-    body: req.body,
+    body: safeBody,
   });
 
   res.status(500).json({ error: 'Something went wrong on our end. Please try again.' });

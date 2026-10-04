@@ -92,7 +92,9 @@ router.post('/member-login', memberLoginLimiter, async (req, res) => {
   const payload = { sub: member.id, name: member.full_name, role: 'member', memberCode: member.member_code };
   const token = jwt.sign(payload, config.jwtSecret, { expiresIn: '24h' });
   const { password_hash, ...safeMember } = member;
-  res.json({ token, member: { ...safeMember, token } });
+  // Keep the authentication token separate from profile data. This prevents
+  // accidental token persistence if the member object is later cached or logged.
+  res.json({ token, member: safeMember });
 });
 
 router.get('/me', requireAuth, (req, res) => {
