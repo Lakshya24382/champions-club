@@ -10,6 +10,16 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
+// FIX: staff login was missing a rate limiter entirely — brute-force against
+// owner/admin accounts was unrestricted. Apply the same pattern as member login.
+const staffLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Please try again later.' },
+});
+
 const memberLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -18,11 +28,10 @@ const memberLoginLimiter = rateLimit({
   message: { error: 'Too many member login attempts. Please try again later.' },
 });
 
-// FIX 1 & 7: Use z.string().email() (Zod v3/v4 compatible) instead of z.email()
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 
-// Staff login
-router.post('/login', async (req, res) => {
+// Staff login — FIX: staffLoginLimiter applied
+router.post('/login', staffLoginLimiter, async (req, res) => {
   const { email, password } = loginSchema.parse(req.body);
   const normalizedEmail = email.trim().toLowerCase();
   const { rows: [user] } = await query(
@@ -90,7 +99,6 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ id: req.user.sub, name: req.user.name, role: req.user.role });
 });
 
-// FIX 1: User management endpoints (owner/admin only)
 const userSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().email(),

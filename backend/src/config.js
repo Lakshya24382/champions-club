@@ -1,5 +1,15 @@
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
-  throw new Error('JWT_SECRET is missing in .env');
+// FIX: warn loudly about the fallback secret in ANY non-production environment,
+// not just production. A staging server without JWT_SECRET set would previously
+// run with the well-known default, making all issued tokens forgeable.
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET is missing in .env');
+  } else {
+    console.warn(
+      '[config] WARNING: JWT_SECRET is not set. ' +
+      'Using the insecure dev fallback. Set JWT_SECRET in your .env file.',
+    );
+  }
 }
 
 export const config = {

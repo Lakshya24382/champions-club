@@ -3,10 +3,12 @@ import { z } from 'zod';
 import { query, withTransaction } from '../db.js';
 import { HttpError, parseId } from '../utils/httpError.js';
 import { ageOn } from '../utils/dates.js';
+// FIX: import shared phone normaliser so staff-created members store phones in
+// the same format as public-signup members and lead conversions.
+import { normPhone } from '../utils/phone.js';
 
 const router = Router();
 
-// One definition of "status", reused everywhere. Nobody has to remember expiry dates.
 const STATUS_SQL = `CASE
   WHEN NOT m.is_active THEN 'inactive'
   WHEN m.expires_on < current_date THEN 'expired'
@@ -46,7 +48,6 @@ function assertPlanFits(plan, dateOfBirth) {
   }
 }
 
-// GET /api/members?search=&status=&planId=&limit=
 router.get('/', async (req, res) => {
   const { search = '', status = '', planId = '', limit = '200' } = req.query;
   const params = [];
@@ -86,7 +87,6 @@ router.get('/', async (req, res) => {
   res.json(rows);
 });
 
-// GET /api/members/:id : full profile + history, so any staff member can recognise anyone
 router.get('/:id', async (req, res) => {
   const id = parseId(req.params.id);
   const { rows: [member] } = await query(
@@ -114,21 +114,31 @@ router.get('/:id', async (req, res) => {
   res.json({ ...member, events, bookings });
 });
 
-// POST /api/members : the front-desk sign-up
+// POST /api/members — front-desk sign-up
+// FIX: normalise phone before insert so it matches the format used by public
+// signup and the regexp_replace comparisons in DB queries.
 router.post('/', async (req, res) => {
   const d = createSchema.parse(req.body);
+  const phone = normPhone(d.phone);   // FIX
+
   const member = await withTransaction(async (c) => {
     const { rows: [plan] } = await c.query(
       'SELECT * FROM membership_plans WHERE id = $1 AND is_active', [d.planId]);
     if (!plan) throw new HttpError(404, 'Plan not found');
     assertPlanFits(plan, d.dateOfBirth);
 
+    // FIX: check for existing member by normalised phone before inserting,
+    // giving a clean 409 instead of a cryptic unique-constraint error.
+    const { rows: [dup] } = await c.query(
+      'SELECT member_code FROM members WHERE phone = $1', [phone]);
+    if (dup) throw new HttpError(409, `A member with this phone number already exists (${dup.member_code})`);
+
     const { rows: [m] } = await c.query(
       `INSERT INTO members
          (full_name, phone, email, date_of_birth, gender, emergency_contact, plan_id, expires_on)
        VALUES ($1,$2,$3,$4,$5,$6,$7, current_date + $8::int)
        RETURNING *`,
-      [d.fullName, d.phone, d.email ?? null, d.dateOfBirth, d.gender ?? null,
+      [d.fullName, phone, d.email ?? null, d.dateOfBirth, d.gender ?? null,
        d.emergencyContact ?? null, plan.id, plan.duration_days],
     );
     await c.query(
@@ -142,9 +152,14 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/members/:id
+// FIX: normalise phone on update too.
 router.patch('/:id', async (req, res) => {
   const id = parseId(req.params.id);
   const d = updateSchema.parse(req.body);
+
+  // FIX: normalise phone if it's being updated
+  const phone = d.phone != null ? normPhone(d.phone) : null;
+
   const { rows: [m] } = await query(
     `UPDATE members SET
         full_name         = COALESCE($2, full_name),
@@ -154,7 +169,7 @@ router.patch('/:id', async (req, res) => {
         notes             = CASE WHEN $8::boolean THEN $9 ELSE notes END,
         is_active         = COALESCE($10, is_active)
       WHERE id = $1 RETURNING *`,
-    [id, d.fullName ?? null, d.phone ?? null,
+    [id, d.fullName ?? null, phone,
      'email' in d, d.email ?? null,
      'emergencyContact' in d, d.emergencyContact ?? null,
      'notes' in d, d.notes ?? null,
@@ -164,7 +179,6 @@ router.patch('/:id', async (req, res) => {
   res.json(m);
 });
 
-// POST /api/members/:id/renew : renew, or switch plan (planId differs)
 router.post('/:id/renew', async (req, res) => {
   const id = parseId(req.params.id);
   const d = renewSchema.parse(req.body);
@@ -180,7 +194,6 @@ router.post('/:id/renew', async (req, res) => {
     assertPlanFits(plan, member.date_of_birth);
 
     const eventType = planId !== member.plan_id ? 'plan_changed' : 'renewed';
-    // Renew from whichever is later: today or the current expiry (no days lost when renewing early)
     const { rows: [m] } = await c.query(
       `UPDATE members
           SET plan_id = $2, is_active = TRUE,

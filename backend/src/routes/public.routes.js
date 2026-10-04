@@ -6,12 +6,15 @@ import { rules } from '../config.js';
 import { HttpError } from '../utils/httpError.js';
 import { isSocialSlot } from '../utils/slots.js';
 import { getAvailability, createBooking, cancelBooking } from '../services/booking.service.js';
-import { captureLead, normPhone, normEmail, publicQuote } from '../services/lead.service.js';
+// FIX: normPhone and normEmail now sourced from the shared util (phone.js) and
+// from lead.service for email. lead.service.js also re-exports normPhone from
+// phone.js so existing lead-service callers are unaffected.
+import { normPhone } from '../utils/phone.js';
+import { captureLead, normEmail, publicQuote } from '../services/lead.service.js';
 import { notifyStaff } from '../utils/notify.js';
 import { ageOn } from '../utils/dates.js';
 import { hashPassword } from '../utils/password.js';
 
-// PUBLIC routes: no login. Never expose names, member data or exact stock.
 const router = Router();
 
 const writeLimiter = rateLimit({
@@ -35,7 +38,6 @@ async function assertWithinWeek(date) {
   }
 }
 
-// ---- everything the home page needs, in one call
 router.get('/overview', async (_req, res) => {
   const { rows: plans } = await query(
     `SELECT id, code, name, description, price, duration_days,
@@ -52,8 +54,6 @@ router.get('/overview', async (_req, res) => {
   });
 });
 
-
-// ---- public membership signup
 const signupSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   phone: phoneStr,
@@ -68,6 +68,7 @@ const signupSchema = z.object({
 router.post('/member-signup', writeLimiter, async (req, res) => {
   const d = signupSchema.parse(req.body);
   if (d.dateOfBirth > new Date().toISOString().slice(0, 10)) throw new HttpError(400, 'Date of birth cannot be in the future');
+  // FIX: normPhone is now the shared util — consistent with staff-created members.
   const phone = normPhone(d.phone);
   const email = d.email ? normEmail(d.email) : null;
   if (!email) throw new HttpError(400, 'Email is required to create your account');
@@ -96,26 +97,24 @@ router.post('/member-signup', writeLimiter, async (req, res) => {
   res.status(201).json({ ok: true, member, message: 'Registration successful. You can now sign in with your email and password.' });
 });
 
-// ---- "what is free this week": slot states only
 router.get('/availability', async (req, res) => {
   const date = dateStr.parse(req.query.date);
   await assertWithinWeek(date);
   res.json(await getAvailability(date));
 });
 
-// ---- contact form
 const enquirySchema = z.object({
   name: z.string().trim().min(2).max(100),
   phone: phoneStr,
   email: z.string().email().nullish(),
   message: z.string().trim().max(1000).nullish(),
   interestedPlanId: z.number().int().positive().nullish(),
-  website: z.string().optional(),       // honeypot: real people never fill this in
+  website: z.string().optional(),       // honeypot
 });
 
 router.post('/enquiries', writeLimiter, async (req, res) => {
   const d = enquirySchema.parse(req.body);
-  if (d.website) return res.status(201).json({ ok: true });   // a bot: pretend success, store nothing
+  if (d.website) return res.status(201).json({ ok: true });
 
   const result = await withTransaction((c) =>
     captureLead(c, { ...d, email: normEmail(d.email), phone: normPhone(d.phone), source: 'website' }));
@@ -126,7 +125,6 @@ router.post('/enquiries', writeLimiter, async (req, res) => {
   res.status(201).json({ ok: true, message: "Thanks! We'll get back to you shortly." });
 });
 
-// ---- trial session
 const trialSchema = z.object({
   name: z.string().trim().min(2).max(100),
   phone: phoneStr,
@@ -152,7 +150,7 @@ router.post('/trial', writeLimiter, async (req, res) => {
 
   const phone = normPhone(d.phone);
   const { rows: [isMember] } = await query(
-    `SELECT 1 FROM members WHERE regexp_replace(phone, '[^\\d+]', '', 'g') = $1`, [phone]);
+    `SELECT 1 FROM members WHERE phone = $1`, [phone]);
   if (isMember) throw new HttpError(409, 'This number belongs to an existing member. Please book through the front desk');
 
   const { rows: [usedTrial] } = await query(
@@ -160,7 +158,6 @@ router.post('/trial', writeLimiter, async (req, res) => {
       WHERE l.phone = $1 AND b.status = 'confirmed'`, [phone]);
   if (usedTrial) throw new HttpError(409, 'A trial session is already booked for this number. Please contact the club for more');
 
-  // Same engine as staff bookings: court lock, overlap guard, opening hours.
   const booking = await createBooking(
     { courtId: court.id, date: d.date, time: d.time, guestName: d.name, guestPhone: phone }, null);
 
@@ -183,7 +180,6 @@ router.post('/trial', writeLimiter, async (req, res) => {
   });
 });
 
-// ---- the quote page staff share with a prospect
 router.get('/quotes/:token', async (req, res) => {
   const token = z.string().regex(/^[a-f0-9]{32}$/).safeParse(req.params.token);
   if (!token.success) throw new HttpError(404, 'Quote not found');

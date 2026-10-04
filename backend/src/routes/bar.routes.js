@@ -58,7 +58,6 @@ router.patch('/menu/items/:id', managers, async (req, res) => {
   res.json(item);
 });
 
-// ANY staff member can flip "sold out": the kitchen knows first.
 router.post('/menu/items/:id/availability', async (req, res) => {
   const id = parseId(req.params.id);
   const { isAvailable } = z.object({ isAvailable: z.boolean() }).parse(req.body);
@@ -130,7 +129,12 @@ router.post('/orders/:id/settle', async (req, res) => {
   res.json(await bar.settleTab(parseId(req.params.id), payments, req.user.sub));
 });
 
-router.post('/orders/:id/void', async (req, res) => {
+// FIX: void now requires manager role always (not only when items are prepared).
+// Previously any staff member could silently void an empty open tab, which could
+// hide accidental tab openings or obscure revenue tracking.
+// The service-layer isManager() guard for partially-prepared tabs remains as a
+// second layer, but the primary gate is now the route middleware.
+router.post('/orders/:id/void', managers, async (req, res) => {
   const { reason } = z.object({ reason: z.string().trim().min(2) }).parse(req.body ?? {});
   res.json(await bar.voidTab(parseId(req.params.id), reason, req.user));
 });
@@ -145,7 +149,6 @@ router.post('/items/:id/cancel', async (req, res) => {
   res.json(await bar.cancelItem(parseId(req.params.id), req.user));
 });
 
-// The kitchen / bar screen: everything not yet served on open tabs.
 router.get('/kitchen', async (req, res) => {
   const station = z.enum(['kitchen', 'bar', '']).default('').parse(req.query.station ?? '');
   const { rows } = await query(

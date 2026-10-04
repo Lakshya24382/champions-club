@@ -1,9 +1,12 @@
 import { query, withTransaction } from '../db.js';
 import { HttpError } from '../utils/httpError.js';
 import { createMember } from './member.service.js';
+// FIX: normPhone now lives in utils/phone.js and is re-exported from here so
+// existing imports of normPhone from lead.service.js continue to work without
+// changes. Only public.routes.js and members.routes.js were updated to import
+// directly from the util.
+export { normPhone } from '../utils/phone.js';
 
-// "98765 43210" and "+91-98765-43210" must count as the same kind of thing: keep digits and "+".
-export const normPhone = (p = '') => p.replace(/[^\d+]/g, '');
 export const normEmail = (e) => {
   const value = typeof e === 'string' ? e.trim().toLowerCase() : '';
   return value || null;
@@ -15,8 +18,8 @@ export async function logActivity(db, leadId, kind, body, userId = null) {
     [leadId, kind, body, userId]);
 }
 
-// ------------------------------------------------------------ capture (public form, trial, staff)
 export async function captureLead(db, d, userId = null) {
+  const { normPhone } = await import('../utils/phone.js');
   const phone = normPhone(d.phone);
   const email = normEmail(d.email);
   const kind = d.trialBookingId ? 'trial' : 'enquiry';
@@ -36,7 +39,6 @@ export async function captureLead(db, d, userId = null) {
     return { lead: created, duplicate: false };
   }
 
-  // Already has an open lead: add to it instead of creating a second one.
   const { rows: [lead] } = await db.query(
     `UPDATE leads SET
         email = COALESCE(email, $2),
@@ -53,7 +55,6 @@ export async function captureLead(db, d, userId = null) {
   return { lead, duplicate: true };
 }
 
-// ------------------------------------------------------------ reading
 export async function leadSummary() {
   const { rows: [s] } = await query(`
     SELECT
@@ -118,7 +119,6 @@ export async function getLead(id, db = { query }) {
   return { ...lead, activities, quotes };
 }
 
-// ------------------------------------------------------------ changing
 async function lockLead(c, id) {
   const { rows: [lead] } = await c.query('SELECT * FROM leads WHERE id = $1 FOR UPDATE', [id]);
   if (!lead) throw new HttpError(404, 'Enquiry not found');
@@ -161,7 +161,6 @@ export async function updateLead(id, d, userId) {
       return getLead(id, c);
     });
   } catch (err) {
-    // Re-opening a lost lead when the same phone already has another open lead
     if (err.code === '23505') throw new HttpError(409, 'Another open enquiry already exists for this phone number');
     throw err;
   }
@@ -215,10 +214,8 @@ export async function convertLead(leadId, d, userId) {
     const lead = await lockLead(c, leadId);
     if (lead.status === 'converted') throw new HttpError(409, 'Already converted to a member');
 
-    // Phones are stored raw on members, so compare them normalised.
     const { rows: [dup] } = await c.query(
-      `SELECT member_code FROM members WHERE regexp_replace(phone, '[^\\d+]', '', 'g') = $1`,
-      [lead.phone]);
+      `SELECT member_code FROM members WHERE phone = $1`, [lead.phone]);
     if (dup) throw new HttpError(409, `A member with this phone number already exists (${dup.member_code})`);
 
     let planId = d.planId;
@@ -254,7 +251,6 @@ export async function convertLead(leadId, d, userId) {
   });
 }
 
-// ------------------------------------------------------------ public quote page
 export async function publicQuote(token) {
   const { rows: [q] } = await query(
     `SELECT q.quote_no, q.amount, q.valid_until, q.message, q.status,
